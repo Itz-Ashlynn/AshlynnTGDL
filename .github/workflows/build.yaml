@@ -1,0 +1,86 @@
+name: Build AshlynnTGDL Executables
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  release:
+    types: [published]
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+
+    steps:
+      - name: ⬇️ Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🐍 Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: 📦 Install dependencies & build (Linux / macOS)
+        if: runner.os != 'Windows'
+        run: |
+          chmod +x build.sh
+          ./build.sh
+
+      - name: 📦 Install dependencies & build (Windows)
+        if: runner.os == 'Windows'
+        run: cmd /c build.bat
+
+      - name: 🚀 Upload artifact — Windows
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: AshlynnTGDL-Windows
+          path: AshlynnTGDL.exe
+          retention-days: 30
+
+      - name: 🚀 Upload artifact — Linux
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: AshlynnTGDL-Linux
+          path: AshlynnTGDL
+          retention-days: 30
+
+      - name: 🚀 Upload artifact — macOS
+        if: runner.os == 'macOS'
+        uses: actions/upload-artifact@v4
+        with:
+          name: AshlynnTGDL-macOS
+          path: AshlynnTGDL
+          retention-days: 30
+
+  release:
+    name: Attach binaries to Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release'
+
+    steps:
+      - name: ⬇️ Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist/
+
+      - name: 📎 Upload binaries to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/AshlynnTGDL-Windows/AshlynnTGDL.exe
+            dist/AshlynnTGDL-Linux/AshlynnTGDL
+            dist/AshlynnTGDL-macOS/AshlynnTGDL
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
