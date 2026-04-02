@@ -298,7 +298,7 @@ Every file fetch shows a real-time progress bar:
 
 > [!WARNING]
 > Even with these protections, **you are responsible for your own account's safety.**
-> - Avoid fetching thousands of files per day from a single account
+> - Avoid fetching thousands of files per day from a single account.
 > - Do not use this tool on accounts that are already restricted or flagged
 > - The author is **not responsible** for any account limitations, bans, or data loss resulting from misuse
 
@@ -405,7 +405,7 @@ This project uses the **Telegram MTProto API** through the [Kurigram](https://py
 > [!NOTE]
 > **This project is for educational and personal archival purposes only.**  
 > It demonstrates client-session based media fetching using the official Telegram MTProto API.  
-> Always respect content ownership, copyright, and Telegram's Terms of Service.
+> Always respect content ownership, copyright, and Telegram's Terms of Service. 
 
 ---
 
