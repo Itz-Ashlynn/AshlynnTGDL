@@ -466,6 +466,7 @@ async def main() -> None:
         in_memory=True,
         workers=8,          # More I/O workers → better throughput
         no_updates=True,    # Skip update handling entirely (we're a downloader)
+        max_concurrent_transmissions=4,   # 4 parallel chunk streams per file download
     )
 
     try:
