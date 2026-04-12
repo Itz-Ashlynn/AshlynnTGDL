@@ -1,23 +1,40 @@
-name: Build AshlynnTGDL Executables
+name: Build & Release AshlynnTGDL
 
+# ─── Triggers ──────────────────────────────────────────────────────────────────
+# • Every push to main  → build all platforms + publish to rolling "latest" release
+# • Every version tag   → build all platforms + publish to a versioned release
+# • PRs                 → build only (no release)
 on:
   push:
-    branches:
-      - main
+    branches: [main]
+    tags:     ['v*.*.*']
   pull_request:
-    branches:
-      - main
-  release:
-    types: [published]
+    branches: [main]
+
+# Allow the workflow to create/update releases
+permissions:
+  contents: write
 
 jobs:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Job 1: Build on each platform
+  # ─────────────────────────────────────────────────────────────────────────────
   build:
     name: Build on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
+        include:
+          - os: windows-latest
+            artifact_name: AshlynnTGDL-Windows.exe
+            built_path: AshlynnTGDL.exe
+          - os: ubuntu-latest
+            artifact_name: AshlynnTGDL-Linux
+            built_path: AshlynnTGDL
+          - os: macos-latest
+            artifact_name: AshlynnTGDL-macOS
+            built_path: AshlynnTGDL
 
     steps:
       - name: ⬇️ Checkout repository
@@ -39,48 +56,87 @@ jobs:
         if: runner.os == 'Windows'
         run: cmd /c build.bat
 
-      - name: 🚀 Upload artifact — Windows
-        if: runner.os == 'Windows'
+      # Rename to platform-specific name so all 3 can co-exist in one release
+      - name: 🏷️ Rename binary to platform name
+        shell: bash
+        run: |
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            mv AshlynnTGDL.exe "${{ matrix.artifact_name }}"
+          else
+            mv AshlynnTGDL "${{ matrix.artifact_name }}"
+          fi
+
+      - name: 🚀 Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: AshlynnTGDL-Windows
-          path: AshlynnTGDL.exe
-          retention-days: 30
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.artifact_name }}
+          retention-days: 7
 
-      - name: 🚀 Upload artifact — Linux
-        if: runner.os == 'Linux'
-        uses: actions/upload-artifact@v4
-        with:
-          name: AshlynnTGDL-Linux
-          path: AshlynnTGDL
-          retention-days: 30
-
-      - name: 🚀 Upload artifact — macOS
-        if: runner.os == 'macOS'
-        uses: actions/upload-artifact@v4
-        with:
-          name: AshlynnTGDL-macOS
-          path: AshlynnTGDL
-          retention-days: 30
-
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Job 2: Publish to GitHub Releases
+  #   - Skipped on pull requests
+  #   - On push to main  → updates/creates the rolling "latest" release
+  #   - On version tag   → creates a versioned release (e.g. v2.1.0)
+  # ─────────────────────────────────────────────────────────────────────────────
   release:
-    name: Attach binaries to Release
+    name: Publish to GitHub Releases
     needs: build
     runs-on: ubuntu-latest
-    if: github.event_name == 'release'
+    if: github.event_name != 'pull_request'
 
     steps:
       - name: ⬇️ Download all build artifacts
         uses: actions/download-artifact@v4
         with:
           path: dist/
+          merge-multiple: true  # flatten into dist/ (no sub-folders per artifact)
 
-      - name: 📎 Upload binaries to GitHub Release
+      - name: 📋 List downloaded files
+        run: ls -lh dist/
+
+      # ── Rolling "latest" release (every push to main) ──────────────────────
+      - name: 🔄 Publish rolling "latest" release
+        if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: latest
+          name: "AshlynnTGDL — Latest Build"
+          body: |
+            🤖 **Auto-built from the latest commit on `main`**
+
+            | File | Platform |
+            |------|----------|
+            | `AshlynnTGDL-Windows.exe` | Windows |
+            | `AshlynnTGDL-Linux` | Linux |
+            | `AshlynnTGDL-macOS` | macOS |
+
+            > Built from commit: `${{ github.sha }}`
+          prerelease: true
+          make_latest: false
           files: |
-            dist/AshlynnTGDL-Windows/AshlynnTGDL.exe
-            dist/AshlynnTGDL-Linux/AshlynnTGDL
-            dist/AshlynnTGDL-macOS/AshlynnTGDL
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            dist/AshlynnTGDL-Windows.exe
+            dist/AshlynnTGDL-Linux
+            dist/AshlynnTGDL-macOS
+
+      # ── Versioned release (on tags like v2.0.0) ────────────────────────────
+      - name: 🏷️ Publish versioned release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "AshlynnTGDL ${{ github.ref_name }}"
+          body: |
+            ## AshlynnTGDL ${{ github.ref_name }}
+
+            Download the standalone executable for your platform below.
+
+            | File | Platform |
+            |------|----------|
+            | `AshlynnTGDL-Windows.exe` | Windows |
+            | `AshlynnTGDL-Linux` | Linux |
+            | `AshlynnTGDL-macOS` | macOS |
+          make_latest: true
+          files: |
+            dist/AshlynnTGDL-Windows.exe
+            dist/AshlynnTGDL-Linux
+            dist/AshlynnTGDL-macOS

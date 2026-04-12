@@ -10,7 +10,7 @@ echo  [1/3] Installing dependencies...
 pip install -r requirements.txt
 if errorlevel 1 (
     echo  ERROR: Failed to install dependencies.
-    pause & exit /b 1
+    exit /b 1
 )
 
 :: Install PyInstaller
@@ -18,7 +18,7 @@ echo  [2/3] Installing PyInstaller...
 pip install pyinstaller
 if errorlevel 1 (
     echo  ERROR: Failed to install PyInstaller.
-    pause & exit /b 1
+    exit /b 1
 )
 
 :: Build the executable
@@ -53,4 +53,3 @@ if exist dist\AshlynnTGDL.exe (
 )
 
 echo.
-pause
