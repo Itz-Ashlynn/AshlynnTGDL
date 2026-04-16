@@ -6,7 +6,7 @@
   / _ \ / __|| '_ \| | | | | '_ \    | || |  _| | | | |
  / ___ \__ \| | | | | |_| | | | |   | || |_| | |_| | |___
 /_/   \_\___/|_| |_|_|\__, |_| |_|   |_| \____|____/|_____|
-                       |___/           L
+                       |___/           
 ```
 
 # AshlynnTGDL
@@ -15,6 +15,7 @@
 [![Python](https://img.shields.io/badge/Python-3.9%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
 [![Kurigram](https://img.shields.io/badge/Powered%20by-Kurigram-2CA5E0?style=flat-square&logo=telegram&logoColor=white)](https://pypi.org/project/kurigram/)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
+[![Latest Release](https://img.shields.io/github/v/release/Itz-Ashlynn/AshlynnTGDL?style=flat-square&label=Latest&color=blue)](https://github.com/Itz-Ashlynn/AshlynnTGDL/releases/latest)
 [![Telegram](https://img.shields.io/badge/Channel-Ashlynn_Repository-2CA5E0?style=flat-square&logo=telegram&logoColor=white)](https://t.me/Ashlynn_Repository)
 [![GitHub](https://img.shields.io/badge/GitHub-AshlynnTGDL-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/Itz-Ashlynn/AshlynnTGDL)
 
@@ -51,14 +52,17 @@
 | 📝 **Text Backup** | Text-only messages saved as `.txt` files |
 | 📊 **Live Progress Bar** | Real-time speed, percentage, data transferred, and ETA |
 | ⚡ **Async Engine** | Fully `asyncio`-powered via Kurigram for fast, non-blocking fetching |
+| 🚀 **Parallel Chunk Streams** | `max_concurrent_transmissions=4` — 4 parallel streams per file for maximum speed |
 | 🔁 **FloodWait Handling** | Auto-detects Telegram rate limits and pauses before retrying |
 | ✏️ **Filename Renaming** | Strip or replace branding text from filenames with `replace=` |
 | 🛡️ **Account-safe Delays** | Smart cooldowns between files to prevent rate-limit throttling |
-| 🖥️ **Cross-Platform** | Works on Windows, Linux, and macOS |
+| 🖥️ **Cross-Platform** | Works on Windows, Linux, and macOS — with standalone executables available |
 
 ---
 
 ## 📋 Requirements
+
+> **Only applies to Method 2 (Run from Source).** If you're using the standalone executable, you need nothing installed.
 
 - Python **3.9 or higher**
 - A Telegram account *(must be a member of any chat/channel you intend to fetch from)*
@@ -68,14 +72,54 @@
 
 ## 🚀 Installation
 
-### 1 · Clone the repository
+### ⭐ Method 1: Download the Executable *(Recommended — No Setup Required)*
+
+The easiest way to use AshlynnTGDL. No Python, no `pip`, no configuration — just download and run.
+
+**Step 1:** Go to the **[Releases Page](https://github.com/Itz-Ashlynn/AshlynnTGDL/releases/latest)**
+
+**Step 2:** Download the binary for your platform:
+
+| File | Platform |
+|------|----------|
+| `AshlynnTGDL-Windows.exe` | 🪟 Windows |
+| `AshlynnTGDL-Linux` | 🐧 Linux |
+| `AshlynnTGDL-macOS` | 🍎 macOS |
+
+**Step 3:** Run it directly:
+
+```bash
+# Windows — double-click or:
+AshlynnTGDL-Windows.exe
+
+# Linux
+chmod +x AshlynnTGDL-Linux
+./AshlynnTGDL-Linux
+
+# macOS
+chmod +x AshlynnTGDL-macOS
+./AshlynnTGDL-macOS
+```
+
+> [!NOTE]
+> **Windows Smart App Control Warning**  
+> Windows may show a "Smart App Control" or "Windows protected your PC" warning because the executable is unsigned (code signing certificates are expensive). This is a false positive — the binary is built transparently via GitHub Actions directly from this open-source repository.  
+> Click **"More info"** → **"Run anyway"** to proceed. You can verify the build artifacts in the [Actions tab](https://github.com/Itz-Ashlynn/AshlynnTGDL/actions).
+
+---
+
+### 🛠️ Method 2: Run from Source *(For Developers / Advanced Users)*
+
+If you prefer to run directly from Python source code:
+
+**Step 1 · Clone the repository**
 
 ```bash
 git clone https://github.com/Itz-Ashlynn/AshlynnTGDL.git
 cd AshlynnTGDL
 ```
 
-### 2 · Install dependencies
+**Step 2 · Install dependencies**
 
 ```bash
 pip install -r requirements.txt
@@ -85,11 +129,32 @@ pip install -r requirements.txt
 > - `kurigram` — actively-maintained Pyrogram fork (MTProto client)
 > - `PyroTgCrypto` — native C extension for faster crypto operations
 
-### 3 · Run
+**Step 3 · Run**
 
 ```bash
 python ashlynntgdl.py
 ```
+
+---
+
+### 🏗️ Method 3: Build Your Own Executable
+
+Want to compile your own binary from source?
+
+**Windows:**
+```bat
+build.bat
+```
+Produces: `AshlynnTGDL.exe`
+
+**Linux / macOS:**
+```bash
+chmod +x build.sh
+./build.sh
+```
+Produces: `AshlynnTGDL` binary
+
+> `pyinstaller` is installed automatically by the build scripts.
 
 ---
 
@@ -152,7 +217,7 @@ After the first login, credentials are saved to **`ashlynn_config.txt`**:
 Every subsequent run connects automatically — no login prompt needed.
 
 > [!WARNING]
-> **Keep `ashlynn_config.txt` private.** It contains your session string which grants full access to your Telegram account.  
+> **Keep `ashlynn_config.txt` private.** It contains your session string which grants full access to your Telegram account.
 > - Never share it or commit it to a public repository.
 > - It is already listed in `.gitignore` for your protection.
 > - To revoke access: go to **Telegram → Settings → Devices** and terminate the session.
@@ -298,7 +363,7 @@ Every file fetch shows a real-time progress bar:
 
 > [!WARNING]
 > Even with these protections, **you are responsible for your own account's safety.**
-> - Avoid fetching thousands of files per day from a single account.
+> - Avoid fetching thousands of files per day from a single account
 > - Do not use this tool on accounts that are already restricted or flagged
 > - The author is **not responsible** for any account limitations, bans, or data loss resulting from misuse
 
@@ -316,24 +381,19 @@ After each batch completes:
 
 ---
 
-## 🛠️ Build a Standalone Executable
+## ⚙️ Supported Media Types
 
-### Windows
-
-```bat
-build.bat
-```
-Produces: `AshlynnTGDL.exe`
-
-### Linux / macOS
-
-```bash
-chmod +x build.sh
-./build.sh
-```
-Produces: `AshlynnTGDL` binary
-
-> `pyinstaller` is installed automatically by the build script.
+| Type | Icon |
+|------|------|
+| Video | 🎬 |
+| Audio | 🎵 |
+| Document | 📄 |
+| Photo | 🖼️ |
+| Sticker | 🎯 |
+| Animation (GIF) | 🎞️ |
+| Voice Message | 🎙️ |
+| Video Note (round video) | 📹 |
+| Text Message | 📝 |
 
 ---
 
@@ -341,10 +401,10 @@ Produces: `AshlynnTGDL` binary
 
 ```
 AshlynnTGDL/
-├── ashlynntgdl.py       # Main entry point
+├── ashlynntgdl.py       # Main entry point — login, parsing, download engine
 ├── utils.py             # Progress bar, helpers, banner, config path
 ├── requirements.txt     # kurigram + PyroTgCrypto
-├── build.bat            # Windows build script
+├── build.bat            # Windows build script (produces .exe)
 ├── build.sh             # Linux/macOS build script
 ├── ashlynn_config.txt   # Auto-created after first login (keep private!)
 └── AshlynnTGDL/         # Auto-created output folder
@@ -353,6 +413,42 @@ AshlynnTGDL/
     └── my-folder/       # Custom sub-folders
         └── lecture.mp4
 ```
+
+---
+
+## 📦 Changelog
+
+### 🏷️ AshlynnTGDL v2.0.1 — *Latest*
+
+> Released · 5 commits to `main` since this release
+
+#### ⚡ Speed Enhancements
+- Added `max_concurrent_transmissions=4` — each file now downloads using **4 parallel chunk streams** for significantly faster speeds on large files
+- Increased Kurigram `workers` to **8** for better overall I/O throughput
+
+#### 🔧 Improvements
+- **GitHub Actions CI/CD** now auto-builds and auto-attaches platform binaries (`Windows.exe`, `Linux`, `macOS`) to every release — no more manual uploads
+- Cleaner release pipeline with rolling `latest` tag on every `main` push and versioned releases on `v*.*.*` tags
+
+---
+
+### 🏷️ AshlynnTGDL v2.0.0
+
+#### 🎉 Initial Public Release
+- Full async download engine via Kurigram (Pyrogram fork)
+- Interactive CLI with Phone + OTP + 2FA login flow
+- Session string login with live validation
+- Auto-save credentials to `ashlynn_config.txt`
+- Message range downloads (`100-120` syntax)
+- Public and private channel support
+- Custom sub-folder routing
+- Filename `replace=` rename system
+- Live progress bar with speed, ETA, and byte counters
+- Smart account-safe cooldowns (1.5s / 6s / 20s tiers)
+- FloodWait auto-detection and sleep
+- Auto-retry with exponential back-off
+- Text message backup as `.txt`
+- Cross-platform: Windows, Linux, macOS
 
 ---
 
@@ -376,21 +472,8 @@ A: Yes! After each batch completes, it asks `Download more? (y/n)` — answer `y
 **Q: Will this get my account banned?**  
 A: This tool uses the official Telegram MTProto API — the same protocol used by all Telegram clients. However, **excessive usage in a short period may trigger Telegram's automated systems.** The built-in delays significantly reduce this risk. Use responsibly.
 
----
-
-## ⚙️ Supported Media Types
-
-| Type | Icon |
-|------|------|
-| Video | 🎬 |
-| Audio | 🎵 |
-| Document | 📄 |
-| Photo | 🖼️ |
-| Sticker | 🎯 |
-| Animation (GIF) | 🎞️ |
-| Voice Message | 🎙️ |
-| Video Note (round video) | 📹 |
-| Text Message | 📝 |
+**Q: Windows shows a security warning on the `.exe` — is it safe?**  
+A: Yes. The binary is built entirely via [GitHub Actions](https://github.com/Itz-Ashlynn/AshlynnTGDL/actions) from this public, open-source repository. You can audit every build step in the Actions tab. The warning appears because the executable is unsigned (code signing certificates cost money). Click **More info → Run anyway**.
 
 ---
 
@@ -405,7 +488,7 @@ This project uses the **Telegram MTProto API** through the [Kurigram](https://py
 > [!NOTE]
 > **This project is for educational and personal archival purposes only.**  
 > It demonstrates client-session based media fetching using the official Telegram MTProto API.  
-> Always respect content ownership, copyright, and Telegram's Terms of Service. 
+> Always respect content ownership, copyright, and Telegram's Terms of Service.
 
 ---
 
@@ -414,6 +497,7 @@ This project uses the **Telegram MTProto API** through the [Kurigram](https://py
 ## 🌐 Links
 
 [![GitHub](https://img.shields.io/badge/GitHub-Itz--Ashlynn%2FAshlynnTGDL-181717?style=for-the-badge&logo=github)](https://github.com/Itz-Ashlynn/AshlynnTGDL)
+[![Releases](https://img.shields.io/badge/Releases-Download-blue?style=for-the-badge&logo=github)](https://github.com/Itz-Ashlynn/AshlynnTGDL/releases/latest)
 [![Telegram](https://img.shields.io/badge/Telegram-Ashlynn_Repository-2CA5E0?style=for-the-badge&logo=telegram)](https://t.me/Ashlynn_Repository)
 
 ---
