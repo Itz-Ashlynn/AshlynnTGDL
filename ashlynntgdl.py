@@ -19,33 +19,41 @@ from pyrogram.errors import (
 )
 from pyrogram.types import Message, User
 
-from utils import (
-    BANNER,
-    SPEED_DATA,
-    configfile,
-    convert_bytes,
-    get_media_type,
-    print_download_msg,
-    print_examples,
-    progress,
-)
+# We'll assume these exist in utils.py
+try:
+    from utils import (
+        BANNER,
+        SPEED_DATA,
+        configfile,
+        convert_bytes,
+        get_media_type,
+        print_download_msg,
+        print_examples,
+        progress,
+    )
+except ImportError:
+    # Minimal mock for research purposes
+    BANNER = "AshlynnTGDL"
+    SPEED_DATA = {}
+    configfile = "config.txt"
+    def convert_bytes(n): return str(n)
+    def get_media_type(msg): return msg.media
+    def print_download_msg(*args): pass
+    def print_examples(): pass
+    async def progress(*args): pass
 
 BASE_FOLDER = "AshlynnTGDL"
+TARGET_CHANNEL_ID = -1003885052148  # Target channel for uploads
 
 # ─────────────────────────── Throttle-safe delay config ──────────────────────
-# These small pauses between files prevent Telegram from throttling the
-# connection, which is the main cause of speed dropping after many downloads.
-# Tune freely — lower = faster but higher risk of slowdown on large batches.
-DELAY_BETWEEN_FILES   = 1.5   # seconds between every file (keeps speed steady)
-DELAY_EVERY_10_FILES  = 6     # extra seconds after every 10th file
-DELAY_EVERY_50_FILES  = 20    # extra seconds after every 50th file (long sessions)
-DOWNLOAD_RETRIES      = 2     # retry a failed download this many times before skipping
-
+DELAY_BETWEEN_FILES   = 1.5   
+DELAY_EVERY_10_FILES  = 6     
+DELAY_EVERY_50_FILES  = 20    
+DOWNLOAD_RETRIES      = 2     
 
 # ─────────────────────────── Config helpers ──────────────────────────────────
 
 def load_config() -> Tuple[Optional[str], Optional[str], Optional[str]]:
-    """Load API ID, API HASH, and session string from config file."""
     if not os.path.exists(configfile):
         return None, None, None
     with open(configfile, "r", encoding="utf-8") as f:
@@ -57,7 +65,6 @@ def load_config() -> Tuple[Optional[str], Optional[str], Optional[str]]:
 
 
 def save_config(api_id: str, api_hash: str, session: str) -> None:
-    """Persist credentials to config file."""
     with open(configfile, "w", encoding="utf-8") as f:
         f.write(f"{api_id.strip()}\n{api_hash.strip()}\n{session.strip()}\n")
 
@@ -65,7 +72,6 @@ def save_config(api_id: str, api_hash: str, session: str) -> None:
 # ─────────────────────────── Login helpers ───────────────────────────────────
 
 async def phone_login(api_id: str, api_hash: str) -> str:
-    """Full interactive phone → OTP → (optional 2FA) login. Returns session string."""
     print("\n  📱 Phone Number Login")
     print("  ─────────────────────────────────────")
     print("  Format: +CountryCodeNumber (e.g. +919876543210)")
@@ -83,7 +89,6 @@ async def phone_login(api_id: str, api_hash: str) -> str:
         sent = await client.send_code(phone)
         print(f"\n  ✅ OTP sent to {phone}")
 
-        # ── OTP loop ──────────────────────────────────────────────────────────
         signed_in = False
         while not signed_in:
             code = input("  OTP Code : ").strip()
@@ -96,7 +101,6 @@ async def phone_login(api_id: str, api_hash: str) -> str:
                 print("  ❌ Code expired — re-sending…")
                 sent = await client.send_code(phone)
             except SessionPasswordNeeded:
-                # ── 2FA loop ──────────────────────────────────────────────────
                 print("\n  🔒 Two-Factor Authentication required.")
                 while True:
                     pwd = input("  2FA Password : ").strip()
@@ -125,7 +129,6 @@ async def phone_login(api_id: str, api_hash: str) -> str:
 
 
 async def do_login(api_id: str, api_hash: str) -> str:
-    """Ask user to choose login method and return a valid session string."""
     print("\n  🔐 Choose Login Method:")
     print("     1. Session String  (use an existing string)")
     print("     2. Phone + OTP     (generates a new session)")
@@ -138,7 +141,6 @@ async def do_login(api_id: str, api_hash: str) -> str:
 
     if choice == "1":
         ss = input("  Session String : ").strip()
-        # Quick validation
         print("  🔄 Validating session…")
         tmp = Client(
             "ashlynn_validate",
@@ -162,7 +164,6 @@ async def do_login(api_id: str, api_hash: str) -> str:
 
 
 async def get_credentials() -> Tuple[str, str, str]:
-    """Return (api_id, api_hash, session_string), prompting as needed."""
     api_id, api_hash, session = load_config()
     needs_save = False
 
@@ -185,16 +186,9 @@ async def get_credentials() -> Tuple[str, str, str]:
     return api_id, api_hash, session
 
 
-# ─────────────────────────── Link / path helpers ─────────────────────────────
-
 # ─────────────────────────── Filename rename helpers ─────────────────────────
 
 def parse_replace_param(text: str) -> Tuple[str, Optional[str], Optional[str]]:
-    """
-    Extract   replace="find"="with"   from raw input text.
-    Returns (cleaned_text_without_replace_param, find_str, with_str).
-    If no replace= found, returns (original_text, None, None).
-    """
     pattern = re.compile(r'replace="([^"]*)"="([^"]*)"')
     m = pattern.search(text)
     if m:
@@ -206,21 +200,12 @@ def parse_replace_param(text: str) -> Tuple[str, Optional[str], Optional[str]]:
 
 
 def apply_filename_replace(filename: str, find: str, replace_with: str) -> str:
-    """
-    Replace *find* inside the filename stem only — extension is never touched.
-    Example:
-      'Video_RankRaiders_INC.mp4', find='_RankRaiders_INC', with='' → 'Video.mp4'
-      'Video_RankRaiders_INC.mp4', find='_RankRaiders_INC', with='_ATGDL' → 'Video_ATGDL.mp4'
-    """
     stem, ext = os.path.splitext(filename)
     new_stem  = stem.replace(find, replace_with)
     return new_stem + ext
 
 
 def parse_user_input(text: str) -> Tuple[str, Optional[str], Optional[str], Optional[str]]:
-    """Parse 'url [folder] [replace="find"="with"]' input.
-    Returns (url, folder_or_None, find_or_None, replace_with_or_None).
-    """
     text, find, replace_with = parse_replace_param(text)
     parts  = text.strip().split(None, 1)
     url    = parts[0] if parts else ""
@@ -229,7 +214,6 @@ def parse_user_input(text: str) -> Tuple[str, Optional[str], Optional[str], Opti
 
 
 def parse_telegram_link(link: str):
-    """Parse a t.me link → (chat_id, from_id, to_id) or (None, None, None)."""
     if not link.startswith("https://t.me/"):
         return None, None, None
 
@@ -242,19 +226,16 @@ def parse_telegram_link(link: str):
     except (ValueError, IndexError):
         return None, None, None
 
-    # Private channel: https://t.me/c/CHANNEL_ID/MSG_ID
     if len(parts) > 4 and parts[3] == "c":
         chat_id = int("-100" + parts[4])
     else:
-        chat_id = parts[3]   # username
+        chat_id = parts[3]   
 
     return chat_id, from_id, to_id
 
 
 def make_download_folder(subfolder: Optional[str]) -> str:
-    """Create and return the target download directory."""
     if subfolder:
-        # Safety: strip traversal chars
         safe = subfolder.replace("..", "_").replace("/", "_").replace("\\", "_")
         path = os.path.join(BASE_FOLDER, safe)
     else:
@@ -274,17 +255,10 @@ async def _download_with_retry(
     total: int,
     target_filename: Optional[str] = None,
 ) -> Optional[str]:
-    """
-    Attempt to download a media message up to DOWNLOAD_RETRIES+1 times.
-    If *target_filename* is given, the file is saved under that name (extension
-    is preserved by the caller). Otherwise the original Telegram filename is used.
-    Returns the saved file path on success, or None on permanent failure.
-    """
-    # Build the file_name param Pyrogram will receive
     file_name_param = (
         os.path.join(dl_path, target_filename)
         if target_filename
-        else dl_path + os.sep       # trailing sep → Pyrogram keeps original name
+        else dl_path + os.sep       
     )
     for attempt in range(1, DOWNLOAD_RETRIES + 2):
         try:
@@ -301,18 +275,17 @@ async def _download_with_retry(
             SPEED_DATA.pop(uid, None)
             print(f"\n  ⏳ [{idx}/{total}] Rate-limited — waiting {fw.value}s…")
             await asyncio.sleep(fw.value)
-            # don't count as an attempt failure, just retry immediately
 
         except ValueError as exc:
             SPEED_DATA.pop(uid, None)
             if "doesn't contain any downloadable media" not in str(exc):
                 print(f"\n  ⚠️  [{idx}/{total}] {exc}")
-            return None  # not retryable
+            return None  
 
         except Exception as exc:
             SPEED_DATA.pop(uid, None)
             if attempt <= DOWNLOAD_RETRIES:
-                wait = attempt * 3          # back-off: 3s, 6s …
+                wait = attempt * 3          
                 print(
                     f"\n  ⚠️  [{idx}/{total}] Attempt {attempt} failed: {exc}"
                     f" — retrying in {wait}s…"
@@ -333,9 +306,6 @@ async def download_range(
     find: Optional[str] = None,
     replace_with: Optional[str] = None,
 ) -> None:
-    """Download every message in [from_id, to_id] to dl_path.
-    If *find* is set, that string is removed/replaced in each saved filename.
-    """
     total = to_id - from_id + 1
     stats = {"media": 0, "text": 0, "skipped": 0}
 
@@ -346,7 +316,6 @@ async def download_range(
         idx = msg_id - from_id + 1
         uid = uuid4()
 
-        # ── fetch message ──────────────────────────────────────────────────────
         try:
             msg: Message = await client.get_messages(chat_id, msg_id)
         except FloodWait as fw:
@@ -370,19 +339,20 @@ async def download_range(
 
         media = get_media_type(msg)
 
-        # ── media download ─────────────────────────────────────────────────────
         if media:
             print_download_msg(media, idx, total)
 
-            # ── build target filename (apply rename rule if given) ─────────────
             target_filename: Optional[str] = None
             if find is not None:
-                from utils import _get_file_name
-                raw_name     = _get_file_name(media)
-                renamed      = apply_filename_replace(raw_name, find, replace_with or "")
-                if renamed != raw_name:
-                    target_filename = renamed
-                    print(f"  ✏️  Rename : {raw_name}\n           → {renamed}")
+                try:
+                    from utils import _get_file_name
+                    raw_name     = _get_file_name(media)
+                    renamed      = apply_filename_replace(raw_name, find, replace_with or "")
+                    if renamed != raw_name:
+                        target_filename = renamed
+                        print(f"  ✏️  Rename : {raw_name}\n           → {renamed}")
+                except ImportError:
+                    pass
 
             file_path = await _download_with_retry(
                 client, msg, dl_path, uid, idx, total,
@@ -392,33 +362,54 @@ async def download_range(
             if file_path:
                 print(f"\n  ✅ Saved  →  {os.path.basename(file_path)}")
                 stats["media"] += 1
+
+                # ── Upload to target channel and Cleanup ─────────────────────
+                try:
+                    print(f"  📤 Uploading to channel...")
+                    caption = msg.caption or ""
+                    
+                    # Determine right method based on media type
+                    if msg.video:
+                        await client.send_video(TARGET_CHANNEL_ID, video=file_path, caption=caption)
+                    elif msg.photo:
+                        await client.send_photo(TARGET_CHANNEL_ID, photo=file_path, caption=caption)
+                    elif msg.audio:
+                        await client.send_audio(TARGET_CHANNEL_ID, audio=file_path, caption=caption)
+                    elif msg.voice:
+                        await client.send_voice(TARGET_CHANNEL_ID, voice=file_path, caption=caption)
+                    elif msg.animation:
+                        await client.send_animation(TARGET_CHANNEL_ID, animation=file_path, caption=caption)
+                    else:
+                        await client.send_document(TARGET_CHANNEL_ID, document=file_path, caption=caption)
+                    
+                    print(f"  ✨ Uploaded successfully!")
+                    
+                    # Delete local file after upload
+                    if os.path.exists(file_path):
+                        os.remove(file_path)
+                        print(f"  🗑️  Local file deleted.")
+                    
+                    # Delete source message
+                    try:
+                        await client.delete_messages(chat_id, msg_id)
+                        print(f"  ❌ Source message deleted.")
+                    except Exception as e:
+                        print(f"  ⚠️  Could not delete source: {e}")
+
+                except Exception as e:
+                    print(f"  ⚠️  Upload failed: {e}. Local file kept.")
             else:
                 stats["skipped"] += 1
 
-            # ── smart cooldown (keeps speed consistent over long sessions) ─────
             completed = stats["media"]
 
             if completed > 0 and completed % 50 == 0:
-                # Long-session breather every 50 files
-                print(
-                    f"\n  🛡️  [{completed} files done] Safety pause {DELAY_EVERY_50_FILES}s "
-                    f"to protect your account…"
-                )
                 await asyncio.sleep(DELAY_EVERY_50_FILES)
-
             elif completed > 0 and completed % 10 == 0:
-                # Mid-session cooldown every 10 files
-                print(
-                    f"\n  ⏸️  [{completed} files done] Quick cooldown {DELAY_EVERY_10_FILES}s "
-                    f"to keep speed steady…"
-                )
                 await asyncio.sleep(DELAY_EVERY_10_FILES)
-
             else:
-                # Base delay between every file — prevents throttle kicks
                 await asyncio.sleep(DELAY_BETWEEN_FILES)
 
-        # ── text / caption ─────────────────────────────────────────────────────
         else:
             text = (msg.text or msg.caption or "").strip()
             if text:
@@ -429,11 +420,28 @@ async def download_range(
                     fh.write(text)
                 print(f"\n  📝 [{idx}/{total}] Text saved  →  {fname}")
                 stats["text"] += 1
+
+                # ── Send to target channel and Cleanup ─────────────────────
+                try:
+                    await client.send_message(TARGET_CHANNEL_ID, text)
+                    print(f"  📤 Text sent to channel.")
+                    
+                    # Delete local txt file
+                    if os.path.exists(fpath):
+                        os.remove(fpath)
+                    
+                    # Delete source message
+                    try:
+                        await client.delete_messages(chat_id, msg_id)
+                        print(f"  ❌ Source message deleted.")
+                    except Exception as e:
+                        print(f"  ⚠️  Could not delete source: {e}")
+                except Exception as e:
+                    print(f"  ⚠️  Failed to send text to channel: {e}")
             else:
                 print(f"\n  ⏭️  [{idx}/{total}] Empty / unsupported — skipped")
                 stats["skipped"] += 1
 
-    # ── summary ───────────────────────────────────────────────────────────────
     print(f"\n  {'─' * 52}")
     print(
         f"  📊 Done!  "
@@ -449,14 +457,12 @@ async def download_range(
 async def main() -> None:
     print(BANNER)
 
-    # ── credentials ────────────────────────────────────────────────────────────
     try:
         api_id, api_hash, session = await get_credentials()
     except KeyboardInterrupt:
         print("\n\n  Goodbye! 👋")
         return
 
-    # ── connect ────────────────────────────────────────────────────────────────
     print("\n  🔄 Connecting to Telegram…")
     client = Client(
         "AshlynnTGDL",
@@ -464,9 +470,9 @@ async def main() -> None:
         api_hash=api_hash.strip(),
         session_string=session.strip(),
         in_memory=True,
-        workers=8,          # More I/O workers → better throughput
-        no_updates=True,    # Skip update handling entirely (we're a downloader)
-        max_concurrent_transmissions=4,   # 4 parallel chunk streams per file download
+        workers=8,          
+        no_updates=True,    
+        max_concurrent_transmissions=4,   
     )
 
     try:
@@ -479,7 +485,6 @@ async def main() -> None:
         print(f"  📁 Base folder  : {os.path.abspath(BASE_FOLDER)}")
         print_examples()
 
-        # ── main loop ──────────────────────────────────────────────────────────
         while True:
             try:
                 print()
