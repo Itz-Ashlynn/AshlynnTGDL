@@ -1,0 +1,1746 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <title>AshlynnTGDL — Fast, Safe & Powerful Telegram Media Downloader</title>
+
+  <!-- Primary Meta Tags -->
+  <meta name="title" content="AshlynnTGDL — Fast, Safe & Powerful Telegram Media Downloader">
+  <meta name="description" content="A client-based Telegram media fetch utility powered by Kurigram. Download videos, audios, photos, documents, and ranges from your Telegram chats & channels locally.">
+  <meta name="keywords" content="Telegram downloader, AshlynnTGDL, Kurigram, Pyrogram, Telegram media fetcher, TG media download, Telegram batch downloader">
+  <meta name="author" content="Aarabh">
+  <meta name="theme-color" content="#09090b">
+
+  <script>document.documentElement.classList.add('js');</script>
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://itz-ashlynn.github.io/AshlynnTGDL/">
+  <meta property="og:title" content="AshlynnTGDL — Telegram Media Fetch Tool">
+  <meta property="og:description" content="Save Telegram media locally with an async, client-based workflow powered by Kurigram with parallel streams and account-safe pacing.">
+  <meta property="og:image" content="https://raw.githubusercontent.com/Itz-Ashlynn/AshlynnTGDL/main/.github/preview.png">
+
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image">
+  <meta property="twitter:url" content="https://itz-ashlynn.github.io/AshlynnTGDL/">
+  <meta property="twitter:title" content="AshlynnTGDL — Telegram Media Fetch Tool">
+  <meta property="twitter:description" content="Save Telegram media locally with an async, client-based workflow powered by Kurigram with parallel streams and account-safe pacing.">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#ecfeff',
+              100: '#cffafe',
+              200: '#a5f3fc',
+              300: '#67e8f9',
+              400: '#22d3ee',
+              500: '#06b6d4',
+              600: '#0891b2',
+              700: '#0e7490',
+              800: '#155e75',
+              900: '#164e63',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    :root {
+      color-scheme: dark;
+      --page-bg: #07080c;
+      --panel: rgba(18, 20, 27, 0.72);
+      --panel-strong: rgba(10, 12, 18, 0.94);
+      --line: rgba(255, 255, 255, 0.09);
+      --line-strong: rgba(103, 232, 249, 0.28);
+      --cyan: #22d3ee;
+      --cyan-soft: #67e8f9;
+      --header-offset: 6rem;
+      --ease-out: cubic-bezier(.22, 1, .36, 1);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    html {
+      scroll-padding-top: var(--header-offset);
+      scrollbar-gutter: stable;
+      background: var(--page-bg);
+    }
+
+    body {
+      background:
+        radial-gradient(circle at 50% -12%, rgba(8, 145, 178, 0.13), transparent 36rem),
+        linear-gradient(180deg, #090a0f 0%, var(--page-bg) 45%, #08090d 100%);
+    }
+
+    body.menu-open { overflow: hidden; }
+
+    section[id] { scroll-margin-top: var(--header-offset); }
+
+    a, button, input {
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    a, button {
+      touch-action: manipulation;
+    }
+
+    button { font: inherit; }
+
+    :where(a, button, input):focus-visible {
+      outline: 3px solid rgba(103, 232, 249, 0.82) !important;
+      outline-offset: 3px;
+      border-color: rgba(103, 232, 249, 0.7) !important;
+    }
+
+    .skip-link {
+      position: fixed;
+      left: 1rem;
+      top: calc(env(safe-area-inset-top, 0px) + .75rem);
+      z-index: 100;
+      transform: translateY(-180%);
+      border: 1px solid rgba(103, 232, 249, 0.45);
+      border-radius: .75rem;
+      background: #111827;
+      padding: .7rem 1rem;
+      color: #cffafe;
+      font-size: .875rem;
+      font-weight: 700;
+      transition: transform .2s ease;
+    }
+
+    .skip-link:focus { transform: translateY(0); }
+
+    .scroll-progress {
+      position: fixed;
+      inset: 0 auto auto 0;
+      z-index: 80;
+      width: 100%;
+      height: 2px;
+      transform: scaleX(0);
+      transform-origin: left center;
+      background: linear-gradient(90deg, #22d3ee, #60a5fa, #818cf8);
+      box-shadow: 0 0 1rem rgba(34, 211, 238, .65);
+      pointer-events: none;
+      will-change: transform;
+    }
+
+    .glass-card {
+      position: relative;
+      min-width: 0;
+      background:
+        linear-gradient(145deg, rgba(255,255,255,.045), rgba(255,255,255,.012) 52%),
+        var(--panel);
+      backdrop-filter: blur(18px) saturate(130%);
+      -webkit-backdrop-filter: blur(18px) saturate(130%);
+      border: 1px solid var(--line);
+      box-shadow: 0 1rem 3.5rem rgba(0, 0, 0, .16);
+      transition:
+        transform .45s var(--ease-out),
+        border-color .35s ease,
+        background-color .35s ease,
+        box-shadow .45s ease;
+    }
+
+    .glass-nav {
+      background: rgba(7, 8, 12, 0.78);
+      backdrop-filter: blur(22px) saturate(140%);
+      -webkit-backdrop-filter: blur(22px) saturate(140%);
+      box-shadow: 0 .5rem 2rem rgba(0, 0, 0, .15);
+    }
+
+    .site-header { padding-top: env(safe-area-inset-top, 0px); }
+
+    .site-header-inner,
+    .hero-grid > *,
+    .playground-grid > *,
+    .safety-grid > *,
+    .footer-inner > * {
+      min-width: 0;
+    }
+
+    .brand-link { min-width: 0; }
+    .brand-copy { min-width: 0; }
+    .brand-title { white-space: nowrap; }
+
+    .desktop-nav { display: flex; }
+    .mobile-nav-toggle, .mobile-menu { display: none; }
+
+    .nav-link {
+      position: relative;
+      padding: .75rem 0;
+    }
+
+    .nav-link::after {
+      content: '';
+      position: absolute;
+      right: 0;
+      bottom: .35rem;
+      left: 0;
+      height: 2px;
+      transform: scaleX(0);
+      border-radius: 999px;
+      background: linear-gradient(90deg, #22d3ee, #60a5fa);
+      transition: transform .3s var(--ease-out);
+    }
+
+    .nav-link:hover::after,
+    .nav-link.is-active::after { transform: scaleX(1); }
+
+    .nav-link.is-active { color: #a5f3fc; }
+
+    .mobile-menu {
+      grid-template-rows: 0fr;
+      opacity: 0;
+      visibility: hidden;
+      border-top: 1px solid transparent;
+      background: rgba(7, 8, 12, .97);
+      transition:
+        grid-template-rows .42s var(--ease-out),
+        opacity .25s ease,
+        visibility 0s linear .42s,
+        border-color .25s ease;
+    }
+
+    .mobile-menu.is-open {
+      grid-template-rows: 1fr;
+      opacity: 1;
+      visibility: visible;
+      border-color: var(--line);
+      transition-delay: 0s;
+    }
+
+    .mobile-menu-inner {
+      min-height: 0;
+      max-height: calc(100dvh - 5rem - env(safe-area-inset-top, 0px));
+      overflow: hidden auto;
+      overscroll-behavior: contain;
+    }
+
+    .menu-close-icon { display: none; }
+    .mobile-nav-toggle[aria-expanded="true"] .menu-open-icon { display: none; }
+    .mobile-nav-toggle[aria-expanded="true"] .menu-close-icon { display: block; }
+
+    .hero-grid { isolation: isolate; }
+
+    .hero-title {
+      max-width: 15ch;
+      font-size: clamp(2.6rem, 6vw, 4.65rem) !important;
+      line-height: 1.06 !important;
+      letter-spacing: -.045em;
+      text-wrap: balance;
+    }
+
+    .section-title {
+      font-size: clamp(1.9rem, 4vw, 2.65rem) !important;
+      line-height: 1.12;
+      letter-spacing: -.035em;
+      text-wrap: balance;
+    }
+
+    .hero-copy { max-width: 41rem; }
+
+    .hero-kicker {
+      max-width: 100%;
+      white-space: normal;
+      line-height: 1.4;
+    }
+
+    .status-dot {
+      position: relative;
+      flex: 0 0 auto;
+    }
+
+    .status-dot::after {
+      content: '';
+      position: absolute;
+      inset: -.3rem;
+      border: 1px solid rgba(34, 211, 238, .5);
+      border-radius: inherit;
+      animation: statusRing 2s ease-out infinite;
+    }
+
+    .gradient-text {
+      background-size: 200% auto;
+      animation: gradientShift 7s ease-in-out infinite;
+    }
+
+    .primary-cta,
+    .secondary-cta {
+      position: relative;
+      min-height: 3rem;
+      overflow: hidden;
+      isolation: isolate;
+    }
+
+    .primary-cta::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      transform: translateX(-115%) skewX(-18deg);
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.46), transparent);
+      transition: transform .7s var(--ease-out);
+    }
+
+    .hero-terminal-wrap { perspective: 1200px; }
+
+    .terminal-shell {
+      transform: translateZ(0);
+      box-shadow: 0 2rem 6rem rgba(0, 0, 0, .48), 0 0 0 1px rgba(255,255,255,.02);
+      animation: terminalFloat 7s ease-in-out infinite;
+    }
+
+    .terminal-command,
+    .terminal-result,
+    .generated-value,
+    .path-value {
+      min-width: 0;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    .terminal-meta { gap: .5rem 1rem; }
+
+    pre {
+      max-width: 100%;
+      overflow-x: auto;
+      overscroll-behavior-inline: contain;
+      scrollbar-width: thin;
+      scrollbar-color: #3f3f46 transparent;
+    }
+
+    pre code { display: inline-block; min-width: max-content; }
+
+    .copy-button {
+      display: inline-flex;
+      width: 2.75rem;
+      height: 2.75rem;
+      flex: 0 0 auto;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: .75rem;
+      background: rgba(255,255,255,.035);
+      color: #a1a1aa;
+      transition: color .2s ease, background-color .2s ease, border-color .2s ease, transform .2s ease;
+    }
+
+    .code-panel { padding-right: 4.25rem !important; }
+
+    .stat-card { height: 100%; }
+    .stat-number { letter-spacing: -.05em; }
+
+    .feature-card {
+      overflow: hidden;
+      isolation: isolate;
+    }
+
+    .feature-card::after {
+      content: '';
+      position: absolute;
+      z-index: -1;
+      width: 15rem;
+      height: 15rem;
+      left: calc(var(--spot-x, 50%) - 7.5rem);
+      top: calc(var(--spot-y, 50%) - 7.5rem);
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(34, 211, 238, .11), transparent 68%);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .35s ease;
+    }
+
+    .install-shell { overflow: hidden; }
+
+    .install-tablist {
+      scrollbar-width: none;
+      overscroll-behavior-inline: contain;
+    }
+
+    .install-tablist::-webkit-scrollbar { display: none; }
+
+    .tab-btn {
+      min-height: 2.75rem;
+      white-space: nowrap;
+    }
+
+    .tab-content:not([hidden]) { animation: panelIn .4s var(--ease-out); }
+
+    .field-input {
+      min-height: 3.1rem;
+      transition: border-color .2s ease, box-shadow .2s ease, background-color .2s ease;
+    }
+
+    .field-input:focus {
+      border-color: rgba(103, 232, 249, .7);
+      background: rgba(24, 24, 27, .96);
+      box-shadow: 0 0 0 4px rgba(34, 211, 238, .1);
+    }
+
+    .field-input[aria-invalid="true"] {
+      border-color: rgba(251, 191, 36, .72);
+      box-shadow: 0 0 0 4px rgba(251, 191, 36, .08);
+    }
+
+    .preview-card { min-width: 0; }
+    .play-output-row { min-width: 0; }
+    .play-output-row > span { min-width: 0; flex: 1 1 auto; }
+    .detail-row { min-width: 0; gap: .75rem; }
+    .detail-row > :last-child { text-align: right; }
+
+    .table-shell { isolation: isolate; }
+    .usage-table td, .usage-table th { vertical-align: top; }
+    .usage-table td { overflow-wrap: anywhere; }
+
+    .safety-timing-row { gap: 1rem; }
+    .safety-timing-row > :last-child { text-align: right; }
+
+    .faq-card { overflow: clip; }
+
+    .faq-button {
+      min-height: 4rem;
+      transition: background-color .25s ease, color .25s ease;
+    }
+
+    .faq-answer {
+      padding: 0 1.5rem 1.5rem;
+    }
+
+    .js .faq-answer {
+      max-height: 0;
+      overflow: hidden;
+      padding: 0 1.5rem;
+      border-top: 1px solid transparent;
+      opacity: 0;
+      visibility: hidden;
+      transition:
+        max-height .42s var(--ease-out),
+        padding .42s var(--ease-out),
+        opacity .25s ease,
+        border-color .25s ease,
+        visibility 0s linear .42s;
+    }
+
+    .js .faq-card.is-open .faq-answer {
+      max-height: 18rem;
+      padding-top: 1rem;
+      padding-bottom: 1.5rem;
+      border-color: rgba(255,255,255,.06);
+      opacity: 1;
+      visibility: visible;
+      transition-delay: 0s;
+    }
+
+    .js .faq-card.is-open .faq-button { background: rgba(255,255,255,.025); }
+    .js .faq-card.is-open .faq-chevron { transform: rotate(180deg); }
+
+    .back-to-top {
+      position: fixed;
+      right: max(1rem, env(safe-area-inset-right, 0px));
+      bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+      z-index: 45;
+      display: inline-flex;
+      width: 2.85rem;
+      height: 2.85rem;
+      align-items: center;
+      justify-content: center;
+      transform: translateY(1rem) scale(.92);
+      border: 1px solid rgba(103, 232, 249, .25);
+      border-radius: 999px;
+      background: rgba(9, 9, 11, .84);
+      color: #67e8f9;
+      box-shadow: 0 .75rem 2rem rgba(0,0,0,.28);
+      backdrop-filter: blur(12px);
+      opacity: 0;
+      pointer-events: none;
+      transition: transform .3s var(--ease-out), opacity .25s ease, background-color .2s ease;
+    }
+
+    .back-to-top.is-visible {
+      transform: translateY(0) scale(1);
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    #toast {
+      right: max(1rem, env(safe-area-inset-right, 0px));
+      bottom: max(4.75rem, calc(env(safe-area-inset-bottom, 0px) + 4.75rem));
+      max-width: min(24rem, calc(100vw - 2rem));
+    }
+
+    #toast[data-type="error"] {
+      border-color: rgba(251, 113, 133, .42);
+      color: #fecdd3;
+    }
+
+    .glow-cyan { box-shadow: 0 0 35px -5px rgba(6, 182, 212, 0.3); }
+    .code-glow { box-shadow: inset 0 0 20px rgba(6, 182, 212, 0.05); }
+
+    .js [data-reveal],
+    .js [data-reveal-stagger] > * {
+      opacity: 0;
+      transform: translate3d(0, 1.4rem, 0);
+      transition:
+        opacity .75s var(--ease-out),
+        transform .75s var(--ease-out);
+    }
+
+    .js [data-reveal].is-visible,
+    .js [data-reveal-stagger].is-visible > * {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+    }
+
+    .js [data-reveal] { transition-delay: var(--reveal-delay, 0ms); }
+
+    .js [data-reveal-stagger].is-visible > * {
+      transition-delay: calc(var(--stagger-index, 0) * 65ms);
+    }
+
+    @keyframes floatGlow {
+      0%, 100% { transform: translateY(0) scale(1); }
+      50% { transform: translateY(-1.25rem) scale(1.04); }
+    }
+
+    @keyframes floatGlowCenter {
+      0%, 100% { transform: translate(-50%, 0) scale(1); }
+      50% { transform: translate(-50%, -1.25rem) scale(1.04); }
+    }
+
+    @keyframes terminalFloat {
+      0%, 100% { transform: translate3d(0, 0, 0) rotateX(0deg); }
+      50% { transform: translate3d(0, -.45rem, 0) rotateX(.4deg); }
+    }
+
+    @keyframes pulseBar {
+      0%, 100% { box-shadow: 0 0 0 rgba(34,211,238,0); filter: saturate(1); }
+      50% { box-shadow: 0 0 1.25rem rgba(34,211,238,0.4); filter: saturate(1.35); }
+    }
+
+    @keyframes statusRing {
+      0% { transform: scale(.65); opacity: .85; }
+      80%, 100% { transform: scale(1.55); opacity: 0; }
+    }
+
+    @keyframes gradientShift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+
+    @keyframes panelIn {
+      from { opacity: 0; transform: translateY(.5rem); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+      .glass-card:hover {
+        border-color: rgba(255, 255, 255, .16);
+        box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, .24);
+      }
+
+      .feature-card:hover { transform: translateY(-.4rem); }
+      .feature-card:hover::after { opacity: 1; }
+      .primary-cta:hover::before { transform: translateX(115%) skewX(-18deg); }
+      .copy-button:hover {
+        transform: translateY(-1px);
+        border-color: rgba(103, 232, 249, .3);
+        background: rgba(34, 211, 238, .08);
+        color: #cffafe;
+      }
+      .back-to-top:hover { background: rgba(21, 94, 117, .5); }
+    }
+
+    @media (max-width: 1120px) {
+      .desktop-nav,
+      .header-action-secondary { display: none !important; }
+      .mobile-nav-toggle { display: inline-flex !important; }
+      .mobile-menu { display: grid; }
+    }
+
+    @media (min-width: 1121px) {
+      .desktop-nav { display: flex !important; }
+      .mobile-nav-toggle,
+      .mobile-menu { display: none !important; }
+    }
+
+    @media (max-width: 767px) {
+      :root { --header-offset: 5.25rem; }
+
+      .glass-card {
+        backdrop-filter: blur(11px) saturate(115%);
+        -webkit-backdrop-filter: blur(11px) saturate(115%);
+      }
+
+      .background-orb {
+        animation: none !important;
+        filter: blur(90px);
+        opacity: .7;
+      }
+
+      .terminal-shell { animation-duration: 10s; }
+      .footer-inner { text-align: center; }
+    }
+
+    @media (max-width: 639px) {
+      .hero-title {
+        max-width: none;
+        font-size: clamp(2.25rem, 11vw, 3.15rem) !important;
+        line-height: 1.08 !important;
+      }
+
+      .hero-kicker { align-items: flex-start; }
+
+      .hero-actions > * { width: 100%; }
+
+      .stats-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: .55rem;
+      }
+
+      .stat-card { padding: .85rem !important; }
+      .stat-number { font-size: clamp(1.35rem, 7vw, 1.85rem) !important; }
+      .stat-label { font-size: .6rem !important; line-height: 1.25; }
+      .stat-description { display: none; }
+
+      .terminal-body { padding: 1rem !important; }
+      .terminal-block { padding: .9rem !important; }
+      .terminal-meta { flex-wrap: wrap; }
+      .terminal-meta span { flex: 1 1 auto; }
+
+      .install-shell { padding: 1rem !important; }
+      .install-tablist {
+        margin-inline: -1rem;
+        padding-inline: 1rem;
+        flex-wrap: nowrap !important;
+        overflow-x: auto;
+        scroll-snap-type: x proximity;
+      }
+      .tab-btn { flex: 0 0 auto; scroll-snap-align: start; }
+
+      .preview-card { padding: 1rem !important; }
+      .play-output-row { align-items: flex-start !important; }
+
+      .detail-row {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+      .detail-row > :last-child { text-align: left; }
+
+      .table-shell { overflow: visible !important; }
+      .table-scroll { overflow: visible !important; }
+      .usage-table,
+      .usage-table tbody,
+      .usage-table tr,
+      .usage-table td { display: block; width: 100%; }
+      .usage-table thead {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        clip-path: inset(50%);
+        white-space: nowrap;
+      }
+      .usage-table tbody { padding: .35rem; }
+      .usage-table tr {
+        padding: .75rem;
+        border: 1px solid transparent;
+        border-radius: 1rem;
+      }
+      .usage-table tr + tr { margin-top: .35rem; border-top-color: rgba(255,255,255,.08); }
+      .usage-table td {
+        display: grid;
+        grid-template-columns: minmax(7rem, .8fr) minmax(0, 1.35fr);
+        gap: .75rem;
+        padding: .55rem .4rem !important;
+        border: 0 !important;
+      }
+      .usage-table td::before {
+        content: attr(data-label);
+        color: #a1a1aa;
+        font-family: "Plus Jakarta Sans", sans-serif;
+        font-size: .65rem;
+        font-weight: 700;
+        letter-spacing: .06em;
+        line-height: 1.45;
+        text-transform: uppercase;
+      }
+
+      .safety-timing-row {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+      .safety-timing-row > :last-child { text-align: left; }
+
+      .faq-button { padding: 1.1rem !important; }
+      .faq-answer { padding-inline: 1.1rem; }
+      .js .faq-card.is-open .faq-answer { padding-bottom: 1.1rem; }
+
+      .footer-links {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: .8rem 1.25rem !important;
+      }
+
+      #toast { left: 1rem; right: 1rem; }
+    }
+
+    @media (max-width: 420px) {
+      .site-header-inner { gap: .6rem !important; }
+      .brand-link { gap: .55rem !important; }
+      .brand-icon { width: 2.25rem !important; height: 2.25rem !important; border-radius: .75rem !important; }
+      .brand-subtitle, .brand-version { display: none; }
+      .header-actions { gap: .45rem !important; }
+      .header-github { width: 2.75rem; height: 2.75rem; padding: 0 !important; }
+      .header-github-label { display: none; }
+      .mobile-nav-toggle { width: 2.75rem !important; height: 2.75rem !important; }
+
+      .hero-kicker { font-size: .68rem !important; }
+      .stats-grid { gap: .4rem; }
+      .stat-card { padding: .7rem !important; border-radius: .9rem !important; }
+      .stat-label { letter-spacing: .04em !important; }
+
+      .terminal-window-title { max-width: 11rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+      .usage-table td { grid-template-columns: 1fr; gap: .2rem; }
+    }
+
+    @media (min-width: 1600px) {
+      .max-w-7xl { max-width: 90rem !important; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto !important; }
+      *, *::before, *::after {
+        scroll-behavior: auto !important;
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+        transition-delay: 0ms !important;
+      }
+      .js [data-reveal],
+      .js [data-reveal-stagger] > * {
+        opacity: 1 !important;
+        transform: none !important;
+      }
+    }
+
+    @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+      .glass-card { background: rgba(18, 20, 27, .96); }
+      .glass-nav { background: rgba(7, 8, 12, .98); }
+    }
+
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #09090b; }
+    ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #52525b; }
+  </style>
+</head>
+<body class="bg-[#09090b] text-zinc-100 antialiased selection:bg-cyan-500/20 selection:text-cyan-300 font-sans min-h-screen relative overflow-x-hidden">
+
+  <a href="#mainContent" class="skip-link">Skip to main content</a>
+  <div id="scrollProgress" class="scroll-progress" aria-hidden="true"></div>
+
+  <!-- Toast Notification -->
+  <div id="toast" role="status" aria-live="polite" aria-atomic="true" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none flex items-center gap-3 px-4 py-3 rounded-2xl bg-zinc-900 border border-cyan-500/30 text-cyan-200 shadow-2xl">
+    <i data-lucide="check-circle-2" class="w-5 h-5 text-cyan-400"></i>
+    <span id="toastMsg" class="text-sm font-medium">Copied to clipboard!</span>
+  </div>
+
+  <!-- Background Glowing Orbs -->
+  <div class="pointer-events-none fixed inset-0 z-0" aria-hidden="true">
+    <div class="background-orb absolute left-1/2 top-0 h-[32rem] w-[32rem] rounded-full bg-cyan-500/[0.07] blur-[128px]" style="animation: floatGlowCenter 10s ease-in-out infinite;"></div>
+    <div class="background-orb absolute -left-32 top-[35%] h-[28rem] w-[28rem] rounded-full bg-blue-600/[0.05] blur-[128px]" style="animation: floatGlow 12s ease-in-out infinite reverse;"></div>
+    <div class="background-orb absolute bottom-0 right-0 h-[30rem] w-[30rem] rounded-full bg-indigo-500/[0.04] blur-[128px]" style="animation: floatGlow 14s ease-in-out infinite;"></div>
+    <div class="absolute inset-0 opacity-[0.04]" style="background-image: radial-gradient(circle at center, rgba(255,255,255,0.4) 0, transparent 1px); background-size: 1.5rem 1.5rem;"></div>
+  </div>
+
+  <div class="relative z-10">
+
+    <!-- Header Navigation -->
+    <header id="siteHeader" class="site-header sticky top-0 z-50 border-b border-white/10 glass-nav">
+      <div class="site-header-inner mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
+        <a href="#top" class="brand-link flex items-center gap-3 group" aria-label="AshlynnTGDL home">
+          <div class="brand-icon flex size-10 items-center justify-center rounded-2xl border border-cyan-500/30 bg-cyan-500/10 text-cyan-300 transition duration-300 group-hover:scale-105 group-hover:bg-cyan-500/20 glow-cyan">
+            <i data-lucide="terminal" class="h-5 w-5"></i>
+          </div>
+          <div class="brand-copy">
+            <div class="flex items-center gap-2">
+              <span class="brand-title text-base font-bold text-white tracking-tight">AshlynnTGDL</span>
+              <span class="brand-version rounded-full bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 text-[10px] font-semibold text-cyan-300">v2.0.1</span>
+            </div>
+            <div class="brand-subtitle text-xs text-zinc-400">Telegram Media Fetch Tool</div>
+          </div>
+        </a>
+
+        <!-- Desktop Nav -->
+        <nav class="desktop-nav items-center gap-7 text-sm font-medium text-zinc-400" aria-label="Primary navigation">
+          <a href="#features" class="nav-link transition duration-200 hover:text-cyan-300">Features</a>
+          <a href="#install" class="nav-link transition duration-200 hover:text-cyan-300">Install</a>
+          <a href="#usage" class="nav-link transition duration-200 hover:text-cyan-300">Usage</a>
+          <a href="#playground" class="nav-link transition duration-200 hover:text-cyan-300">Playground</a>
+          <a href="#safety" class="nav-link transition duration-200 hover:text-cyan-300">Safety</a>
+          <a href="#faq" class="nav-link transition duration-200 hover:text-cyan-300">FAQ</a>
+        </nav>
+
+        <!-- Action Buttons -->
+        <div class="header-actions flex items-center gap-3">
+          <a href="https://github.com/Itz-Ashlynn/AshlynnTGDL/releases/latest" target="_blank" rel="noopener noreferrer" class="header-action-secondary hidden sm:inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-xs font-semibold text-zinc-200 transition duration-300 hover:border-cyan-500/40 hover:bg-cyan-500/10 hover:text-cyan-200">
+            <i data-lucide="download" class="w-3.5 h-3.5 text-cyan-400"></i>
+            <span>Releases</span>
+          </a>
+          <a href="https://github.com/Itz-Ashlynn/AshlynnTGDL" target="_blank" rel="noopener noreferrer" class="header-github inline-flex items-center justify-center gap-2 rounded-full bg-white px-4 py-2 text-xs font-bold text-zinc-950 transition duration-300 hover:bg-zinc-200 hover:scale-[1.02]" aria-label="Open AshlynnTGDL on GitHub">
+            <i data-lucide="git-fork" class="w-4 h-4"></i>
+            <span class="header-github-label">GitHub</span>
+          </a>
+          <button type="button" id="menuBtn" class="mobile-nav-toggle size-11 items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] text-zinc-300 hover:bg-white/[0.08]" aria-label="Open navigation menu" aria-controls="mobileMenu" aria-expanded="false">
+            <i data-lucide="menu" class="menu-open-icon w-5 h-5"></i>
+            <i data-lucide="x" class="menu-close-icon w-5 h-5"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Mobile Menu -->
+      <div id="mobileMenu" class="mobile-menu" aria-hidden="true">
+        <div class="mobile-menu-inner px-4 py-5 sm:px-6">
+          <nav class="flex flex-col gap-2 font-medium text-sm" aria-label="Mobile navigation">
+            <a href="#features" class="rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-zinc-300 hover:bg-white/[0.05] hover:text-white">Features</a>
+            <a href="#install" class="rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-zinc-300 hover:bg-white/[0.05] hover:text-white">Install</a>
+            <a href="#usage" class="rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-zinc-300 hover:bg-white/[0.05] hover:text-white">Usage</a>
+            <a href="#playground" class="rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-zinc-300 hover:bg-white/[0.05] hover:text-white">Playground</a>
+            <a href="#safety" class="rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-zinc-300 hover:bg-white/[0.05] hover:text-white">Safety</a>
+            <a href="#faq" class="rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-zinc-300 hover:bg-white/[0.05] hover:text-white">FAQ</a>
+          </nav>
+        </div>
+      </div>
+    </header>
+
+    <main id="mainContent" tabindex="-1">
+      <span id="top" aria-hidden="true"></span>
+
+      <!-- Hero Section -->
+      <section class="mx-auto max-w-7xl px-4 pb-16 pt-12 sm:px-6 sm:pb-24 sm:pt-20 lg:px-8 lg:pt-24" aria-labelledby="hero-title">
+        <div class="hero-grid grid items-center gap-12 lg:grid-cols-[1.1fr_0.9fr]">
+          <div data-reveal>
+            <!-- Version pill -->
+            <div class="hero-kicker mb-6 inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3.5 py-1.5 text-xs font-semibold text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.15)]">
+              <span class="status-dot size-2 rounded-full bg-cyan-400"></span>
+              <span>Powered by Kurigram • Parallel Chunk Engine</span>
+            </div>
+
+            <h1 id="hero-title" class="hero-title text-4xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-6xl leading-[1.15]">
+              Save Telegram media directly to your machine with <span class="gradient-text bg-gradient-to-r from-cyan-300 via-cyan-400 to-blue-500 bg-clip-text text-transparent">speed & safety.</span>
+            </h1>
+
+            <p class="hero-copy mt-6 text-base leading-relaxed text-zinc-400 sm:text-lg max-w-2xl">
+              AshlynnTGDL is a fast, local client-based Telegram media fetch utility. Log in using your own account, fetch public or private message ranges, organize downloads into custom folders, and replace branding text on the fly.
+            </p>
+
+            <!-- Hero Action Buttons -->
+            <div class="hero-actions mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <a href="https://github.com/Itz-Ashlynn/AshlynnTGDL/releases/latest" target="_blank" rel="noopener noreferrer" class="primary-cta inline-flex items-center justify-center gap-2.5 rounded-full bg-cyan-400 px-6 py-3.5 text-sm font-bold text-zinc-950 transition duration-300 hover:bg-cyan-300 hover:scale-[1.02] shadow-[0_0_25px_rgba(34,211,238,0.3)]">
+                <i data-lucide="download" class="w-4 h-4"></i>
+                <span>Download Executable</span>
+              </a>
+              <a href="#install" class="secondary-cta inline-flex items-center justify-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-6 py-3.5 text-sm font-semibold text-zinc-200 transition duration-300 hover:border-cyan-500/30 hover:bg-cyan-500/10 hover:text-cyan-200">
+                <i data-lucide="book-open" class="w-4 h-4 text-cyan-400"></i>
+                <span>Documentation</span>
+              </a>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="stats-grid mt-10 grid gap-4 sm:grid-cols-3">
+              <div class="stat-card glass-card rounded-2xl p-4">
+                <div class="stat-number text-3xl font-extrabold text-white font-mono">4x</div>
+                <div class="stat-label mt-1 text-xs uppercase tracking-wider font-semibold text-cyan-400">Parallel Streams</div>
+                <p class="stat-description mt-2 text-xs text-zinc-400">Concurrent transmission per file for max throughput.</p>
+              </div>
+              <div class="stat-card glass-card rounded-2xl p-4">
+                <div class="stat-number text-3xl font-extrabold text-white font-mono">9+</div>
+                <div class="stat-label mt-1 text-xs uppercase tracking-wider font-semibold text-cyan-400">Media Formats</div>
+                <p class="stat-description mt-2 text-xs text-zinc-400">Videos, audios, photos, docs, stickers, text backups.</p>
+              </div>
+              <div class="stat-card glass-card rounded-2xl p-4">
+                <div class="stat-number text-3xl font-extrabold text-white font-mono">100%</div>
+                <div class="stat-label mt-1 text-xs uppercase tracking-wider font-semibold text-cyan-400">Account Safe</div>
+                <p class="stat-description mt-2 text-xs text-zinc-400">Built-in FloodWait sleep, cooldown tiers & backoff.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Hero Terminal Card -->
+          <div class="hero-terminal-wrap relative" data-reveal style="--reveal-delay: 120ms;">
+            <div class="absolute -inset-4 rounded-3xl bg-gradient-to-tr from-cyan-500/20 to-blue-600/10 blur-2xl opacity-70"></div>
+            <div class="terminal-shell relative overflow-hidden rounded-2xl border border-white/10 bg-zinc-950/90 shadow-2xl backdrop-blur-xl" aria-label="AshlynnTGDL command-line preview">
+              <!-- Window controls header -->
+              <div class="flex items-center justify-between border-b border-white/10 bg-zinc-900/60 px-4 py-3">
+                <div class="flex items-center gap-2" aria-hidden="true">
+                  <span class="size-3 rounded-full bg-red-500/80"></span>
+                  <span class="size-3 rounded-full bg-yellow-500/80"></span>
+                  <span class="size-3 rounded-full bg-green-500/80"></span>
+                </div>
+                <div class="terminal-window-title text-xs font-mono text-zinc-400 flex items-center gap-1.5">
+                  <i data-lucide="terminal" class="w-3.5 h-3.5 text-cyan-400"></i>
+                  <span>AshlynnTGDL CLI v2.0.1</span>
+                </div>
+              </div>
+
+              <!-- Terminal contents -->
+              <div class="terminal-body p-5 space-y-4 font-mono text-xs leading-relaxed">
+                <!-- Quick start block -->
+                <div class="terminal-block rounded-xl border border-white/10 bg-zinc-900/80 p-4 code-glow relative">
+                  <div class="flex items-center justify-between mb-2 text-cyan-400 font-semibold">
+                    <span>$ Quick Start (Run from Source)</span>
+                    <button type="button" onclick="copyCode('quickStartCode')" class="copy-button -mr-2 -mt-2" aria-label="Copy quick start commands">
+                      <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                    </button>
+                  </div>
+                  <pre id="quickStartCode" class="text-zinc-300 overflow-x-auto"><code>git clone https://github.com/Itz-Ashlynn/AshlynnTGDL.git
+cd AshlynnTGDL
+pip install -r requirements.txt
+python ashlynntgdl.py</code></pre>
+                </div>
+
+                <!-- Simulated Download Progress -->
+                <div class="terminal-block rounded-xl border border-white/10 bg-zinc-900/40 p-4 space-y-3">
+                  <div class="terminal-command text-zinc-400">
+                    <span class="text-cyan-400">🔗 Link ></span> https://t.me/c/1234567890/49-84 Lectures replace="_Brand"=""
+                  </div>
+                  <div class="terminal-result text-zinc-300">
+                    🎬 [3/36] LectureVideo_01.mp4 (Video, 350.70 MB)<br>
+                    ✏️ Rename : LectureVideo_01_Brand.mp4 → LectureVideo_01.mp4
+                  </div>
+                  <div>
+                    <div class="flex justify-between text-[11px] text-zinc-400 mb-1">
+                      <span>Downloading...</span>
+                      <span class="text-cyan-300 font-semibold">100.0%</span>
+                    </div>
+                    <div class="h-2 w-full rounded-full bg-zinc-800 overflow-hidden" role="progressbar" aria-label="Example download progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100">
+                      <div class="h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-500" style="width: 100%; animation: pulseBar 2s infinite;"></div>
+                    </div>
+                    <div class="terminal-meta flex justify-between text-[11px] text-zinc-400 mt-1">
+                      <span>Speed: 4.85 MB/s</span>
+                      <span>350.70 MB / 350.70 MB</span>
+                      <span>ETA: 0s</span>
+                    </div>
+                  </div>
+                  <div class="terminal-result text-green-400 font-semibold">
+                    ✅ Saved → AshlynnTGDL/Lectures/LectureVideo_01.mp4
+                  </div>
+                </div>
+
+                <!-- Tech Badges -->
+                <div class="flex flex-wrap gap-2 pt-1 font-sans">
+                  <span class="rounded-md border border-cyan-500/20 bg-cyan-500/10 px-2.5 py-1 text-[11px] font-medium text-cyan-300">Python 3.9+</span>
+                  <span class="rounded-md border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] font-medium text-zinc-300">Kurigram Async</span>
+                  <span class="rounded-md border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] font-medium text-zinc-300">PyroTgCrypto</span>
+                  <span class="rounded-md border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] font-medium text-zinc-300">Cross-Platform</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Key Highlights / Guarantees -->
+      <section class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4" data-reveal-stagger>
+          <div class="glass-card rounded-2xl p-5 border-amber-500/20 bg-amber-500/[0.03]">
+            <div class="flex items-center gap-2.5 text-amber-300 mb-2 font-semibold">
+              <i data-lucide="shield-alert" class="w-4 h-4"></i>
+              <span>Authorized Use</span>
+            </div>
+            <p class="text-xs leading-relaxed text-zinc-400">Operates using your own Telegram account. Only fetch media from chats you are already a member of.</p>
+          </div>
+          <div class="glass-card rounded-2xl p-5">
+            <div class="flex items-center gap-2.5 text-cyan-300 mb-2 font-semibold">
+              <i data-lucide="key-round" class="w-4 h-4"></i>
+              <span>Official API Credentials</span>
+            </div>
+            <p class="text-xs leading-relaxed text-zinc-400">Uses official API ID and Hash from my.telegram.org. No exploits or unverified endpoints.</p>
+          </div>
+          <div class="glass-card rounded-2xl p-5">
+            <div class="flex items-center gap-2.5 text-cyan-300 mb-2 font-semibold">
+              <i data-lucide="lock" class="w-4 h-4"></i>
+              <span>Local Session Storage</span>
+            </div>
+            <p class="text-xs leading-relaxed text-zinc-400">Sessions are saved locally in ashlynn_config.txt so future runs auto-connect seamlessly.</p>
+          </div>
+          <div class="glass-card rounded-2xl p-5">
+            <div class="flex items-center gap-2.5 text-cyan-300 mb-2 font-semibold">
+              <i data-lucide="zap" class="w-4 h-4"></i>
+              <span>Native MTProto Speed</span>
+            </div>
+            <p class="text-xs leading-relaxed text-zinc-400">Powered by Kurigram & PyroTgCrypto native C-extensions for max network utilization.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Features Section -->
+      <section id="features" class="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
+        <div class="text-center max-w-3xl mx-auto mb-14" data-reveal>
+          <p class="text-xs uppercase tracking-widest font-bold text-cyan-400 mb-2">Feature Breakdown</p>
+          <h2 class="section-title text-3xl font-extrabold text-white sm:text-4xl tracking-tight">Everything built into AshlynnTGDL</h2>
+          <p class="mt-4 text-zinc-400 text-base">Engineered for maximum fetching performance, clean directory organization, and account longevity.</p>
+        </div>
+
+        <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3" data-reveal-stagger>
+          <!-- Feature Item -->
+          <div class="feature-card glass-card rounded-2xl p-6 transition duration-300">
+            <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-300 mb-4">
+              <i data-lucide="log-in" class="w-5 h-5"></i>
+            </div>
+            <h3 class="text-lg font-bold text-white mb-2">Flexible Login Options</h3>
+            <p class="text-sm text-zinc-400 leading-relaxed">Choose between existing Pyrogram session strings or interactive Phone + OTP + 2FA authentication.</p>
+          </div>
+
+          <div class="feature-card glass-card rounded-2xl p-6 transition duration-300">
+            <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-300 mb-4">
+              <i data-lucide="cpu" class="w-5 h-5"></i>
+            </div>
+            <h3 class="text-lg font-bold text-white mb-2">Kurigram Async Engine</h3>
+            <p class="text-sm text-zinc-400 leading-relaxed">Built on Kurigram, an actively-maintained Pyrogram fork optimized for Python 3.9+ async pipelines.</p>
+          </div>
+
+          <div class="feature-card glass-card rounded-2xl p-6 transition duration-300">
+            <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-300 mb-4">
+              <i data-lucide="layers" class="w-5 h-5"></i>
+            </div>
+            <h3 class="text-lg font-bold text-white mb-2">4 Parallel Chunk Streams</h3>
+            <p class="text-sm text-zinc-400 leading-relaxed">Transfers each file using 4 concurrent chunk streams to eliminate bandwidth bottlenecks on large media.</p>
+          </div>
+
+          <div class="feature-card glass-card rounded-2xl p-6 transition duration-300">
+            <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-300 mb-4">
+              <i data-lucide="folder-plus" class="w-5 h-5"></i>
+            </div>
+            <h3 class="text-lg font-bold text-white mb-2">Smart Folder System</h3>
+            <p class="text-sm text-zinc-400 leading-relaxed">Saves downloads to AshlynnTGDL/ with support for custom named sub-folders per message range.</p>
+          </div>
+
+          <div class="feature-card glass-card rounded-2xl p-6 transition duration-300">
+            <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-300 mb-4">
+              <i data-lucide="edit-3" class="w-5 h-5"></i>
+            </div>
+            <h3 class="text-lg font-bold text-white mb-2">On-the-Fly Renaming</h3>
+            <p class="text-sm text-zinc-400 leading-relaxed">Strip unwanted branding text or replace strings across an entire batch using replace="find"="with".</p>
+          </div>
+
+          <div class="feature-card glass-card rounded-2xl p-6 transition duration-300">
+            <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-300 mb-4">
+              <i data-lucide="activity" class="w-5 h-5"></i>
+            </div>
+            <h3 class="text-lg font-bold text-white mb-2">Live Progress Bar</h3>
+            <p class="text-sm text-zinc-400 leading-relaxed">Displays live percentage, transfer speed in MB/s, transferred bytes, and estimated time remaining.</p>
+          </div>
+
+          <div class="feature-card glass-card rounded-2xl p-6 transition duration-300">
+            <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-300 mb-4">
+              <i data-lucide="clock" class="w-5 h-5"></i>
+            </div>
+            <h3 class="text-lg font-bold text-white mb-2">FloodWait Sleep Handling</h3>
+            <p class="text-sm text-zinc-400 leading-relaxed">Detects Telegram rate limit signals automatically and pauses for the exact duration requested.</p>
+          </div>
+
+          <div class="feature-card glass-card rounded-2xl p-6 transition duration-300">
+            <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-300 mb-4">
+              <i data-lucide="file-text" class="w-5 h-5"></i>
+            </div>
+            <h3 class="text-lg font-bold text-white mb-2">Text Message Backup</h3>
+            <p class="text-sm text-zinc-400 leading-relaxed">Text-only messages in a range are automatically exported into cleanly formatted .txt files.</p>
+          </div>
+
+          <div class="feature-card glass-card rounded-2xl p-6 transition duration-300">
+            <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-300 mb-4">
+              <i data-lucide="shield-check" class="w-5 h-5"></i>
+            </div>
+            <h3 class="text-lg font-bold text-white mb-2">Account Safety Pacing</h3>
+            <p class="text-sm text-zinc-400 leading-relaxed">Three-tiered cooldown pauses (1.5s per file, 6s per 10 files, 20s per 50 files) to reduce account throttling risk.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Installation Section (Tabbed) -->
+      <section id="install" class="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
+        <div class="max-w-3xl mb-12" data-reveal>
+          <p class="text-xs uppercase tracking-widest font-bold text-cyan-400 mb-2">Getting Started</p>
+          <h2 class="section-title text-3xl font-extrabold text-white sm:text-4xl tracking-tight">Three simple ways to install</h2>
+          <p class="mt-4 text-zinc-400 text-base">Select your preferred installation method below based on your technical environment.</p>
+        </div>
+
+        <!-- Installation Tabs -->
+        <div class="install-shell glass-card rounded-3xl p-6 lg:p-8" data-reveal>
+          <div class="install-tablist flex flex-wrap gap-2 border-b border-white/10 pb-5" role="tablist" aria-label="Installation methods">
+            <button type="button" id="btn-tab-exe" class="tab-btn active px-5 py-2.5 rounded-full text-xs font-bold transition duration-200 bg-cyan-400 text-zinc-950 shadow-md flex items-center gap-2" role="tab" aria-selected="true" aria-controls="tab-exe" data-tab-target="tab-exe">
+              <i data-lucide="download" class="w-4 h-4"></i>
+              <span>Method 1: Binary Download</span>
+            </button>
+            <button type="button" id="btn-tab-source" class="tab-btn px-5 py-2.5 rounded-full text-xs font-bold transition duration-200 bg-white/[0.04] text-zinc-400 hover:bg-white/[0.08] hover:text-white flex items-center gap-2" role="tab" aria-selected="false" aria-controls="tab-source" tabindex="-1" data-tab-target="tab-source">
+              <i data-lucide="code" class="w-4 h-4"></i>
+              <span>Method 2: Run from Source</span>
+            </button>
+            <button type="button" id="btn-tab-build" class="tab-btn px-5 py-2.5 rounded-full text-xs font-bold transition duration-200 bg-white/[0.04] text-zinc-400 hover:bg-white/[0.08] hover:text-white flex items-center gap-2" role="tab" aria-selected="false" aria-controls="tab-build" tabindex="-1" data-tab-target="tab-build">
+              <i data-lucide="box" class="w-4 h-4"></i>
+              <span>Method 3: Build Custom Executable</span>
+            </button>
+          </div>
+
+          <!-- Tab 1: Binary Executables -->
+          <div id="tab-exe" class="tab-content pt-6 space-y-6" role="tabpanel" aria-labelledby="btn-tab-exe" tabindex="0">
+            <div class="grid gap-4 sm:grid-cols-3">
+              <a href="https://github.com/Itz-Ashlynn/AshlynnTGDL/releases/latest" target="_blank" rel="noopener noreferrer" class="glass-card rounded-2xl p-5 hover:border-cyan-500/40 group transition">
+                <div class="flex items-center gap-3 mb-2">
+                  <i data-lucide="monitor" class="w-5 h-5 text-cyan-400"></i>
+                  <span class="font-bold text-white">Windows</span>
+                </div>
+                <p class="text-xs text-zinc-400 mb-3">AshlynnTGDL-Windows.exe</p>
+                <span class="text-xs font-semibold text-cyan-300 flex items-center gap-1 group-hover:translate-x-1 transition">
+                  Download .exe <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                </span>
+              </a>
+
+              <a href="https://github.com/Itz-Ashlynn/AshlynnTGDL/releases/latest" target="_blank" rel="noopener noreferrer" class="glass-card rounded-2xl p-5 hover:border-cyan-500/40 group transition">
+                <div class="flex items-center gap-3 mb-2">
+                  <i data-lucide="terminal" class="w-5 h-5 text-cyan-400"></i>
+                  <span class="font-bold text-white">Linux</span>
+                </div>
+                <p class="text-xs text-zinc-400 mb-3">AshlynnTGDL-Linux</p>
+                <span class="text-xs font-semibold text-cyan-300 flex items-center gap-1 group-hover:translate-x-1 transition">
+                  Download Binary <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                </span>
+              </a>
+
+              <a href="https://github.com/Itz-Ashlynn/AshlynnTGDL/releases/latest" target="_blank" rel="noopener noreferrer" class="glass-card rounded-2xl p-5 hover:border-cyan-500/40 group transition">
+                <div class="flex items-center gap-3 mb-2">
+                  <i data-lucide="apple" class="w-5 h-5 text-cyan-400"></i>
+                  <span class="font-bold text-white">macOS</span>
+                </div>
+                <p class="text-xs text-zinc-400 mb-3">AshlynnTGDL-macOS</p>
+                <span class="text-xs font-semibold text-cyan-300 flex items-center gap-1 group-hover:translate-x-1 transition">
+                  Download Binary <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                </span>
+              </a>
+            </div>
+
+            <div class="rounded-2xl border border-amber-500/20 bg-amber-500/[0.04] p-4 text-xs leading-relaxed text-amber-200/90 flex gap-3 items-start">
+              <i data-lucide="alert-triangle" class="w-5 h-5 text-amber-400 shrink-0 mt-0.5"></i>
+              <div>
+                <strong class="font-semibold text-amber-300">Windows SmartScreen Note:</strong> Unsigned binaries might trigger a "Windows protected your PC" popup. This occurs because code signing certificates are expensive. The binary is compiled transparently via GitHub Actions from this open-source repo. Click <strong>"More info" &rarr; "Run anyway"</strong>.
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab 2: Run from Source -->
+          <div id="tab-source" class="tab-content hidden pt-6 space-y-4" role="tabpanel" aria-labelledby="btn-tab-source" tabindex="0" hidden>
+            <p class="text-sm text-zinc-300">Requires Python 3.9 or higher installed on your system.</p>
+            <div class="code-panel rounded-2xl border border-white/10 bg-zinc-950 p-4 font-mono text-xs text-zinc-300 relative">
+              <button type="button" onclick="copyCode('sourceCode')" class="copy-button absolute top-3 right-3" aria-label="Copy source installation commands">
+                <i data-lucide="copy" class="w-4 h-4"></i>
+              </button>
+              <pre id="sourceCode"><code># 1. Clone repository
+git clone https://github.com/Itz-Ashlynn/AshlynnTGDL.git
+cd AshlynnTGDL
+
+# 2. Install required dependencies (Kurigram + PyroTgCrypto + alive-progress)
+pip install -r requirements.txt
+
+# 3. Launch the downloader
+python ashlynntgdl.py</code></pre>
+            </div>
+          </div>
+
+          <!-- Tab 3: Build Executable -->
+          <div id="tab-build" class="tab-content hidden pt-6 space-y-4" role="tabpanel" aria-labelledby="btn-tab-build" tabindex="0" hidden>
+            <p class="text-sm text-zinc-300">Compile your own standalone binary using the included platform build scripts.</p>
+            <div class="grid gap-4 sm:grid-cols-2">
+              <div class="code-panel rounded-2xl border border-white/10 bg-zinc-950 p-4 font-mono text-xs text-zinc-300 relative">
+                <div class="text-cyan-400 font-semibold mb-2">Windows (build.bat)</div>
+                <button type="button" onclick="copyCode('buildBat')" class="copy-button absolute top-3 right-3" aria-label="Copy Windows build command">
+                  <i data-lucide="copy" class="w-4 h-4"></i>
+                </button>
+                <pre id="buildBat"><code>build.bat</code></pre>
+              </div>
+
+              <div class="code-panel rounded-2xl border border-white/10 bg-zinc-950 p-4 font-mono text-xs text-zinc-300 relative">
+                <div class="text-cyan-400 font-semibold mb-2">Linux / macOS (build.sh)</div>
+                <button type="button" onclick="copyCode('buildSh')" class="copy-button absolute top-3 right-3" aria-label="Copy Linux and macOS build commands">
+                  <i data-lucide="copy" class="w-4 h-4"></i>
+                </button>
+                <pre id="buildSh"><code>chmod +x build.sh
+./build.sh</code></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Interactive Command Playground Section -->
+      <section id="playground" class="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
+        <div class="glass-card rounded-3xl p-6 lg:p-10 border-cyan-500/20" data-reveal>
+          <div class="playground-grid grid gap-8 lg:grid-cols-2 items-center">
+            <div>
+              <div class="inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-xs font-semibold text-cyan-300 mb-4">
+                <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                <span>Interactive Tool</span>
+              </div>
+              <h2 class="section-title text-3xl font-extrabold text-white tracking-tight">CLI Link & Command Generator</h2>
+              <p class="mt-3 text-sm text-zinc-400 leading-relaxed">
+                Test how link formats, custom folder routing, and replace rules combine into input strings inside the CLI session.
+              </p>
+
+              <!-- Playground Form -->
+              <div class="mt-6 space-y-4">
+                <div>
+                  <label for="playLink" class="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-2">Telegram Message URL</label>
+                  <input type="url" inputmode="url" id="playLink" value="https://t.me/c/1234567890/49-84" aria-describedby="playLinkHint" autocapitalize="none" autocomplete="off" spellcheck="false" class="field-input w-full rounded-xl border border-white/10 bg-zinc-900/80 px-4 py-3 text-base sm:text-sm text-white focus:border-cyan-400 focus:outline-none font-mono">
+                  <p id="playLinkHint" class="mt-2 text-xs text-zinc-400" aria-live="polite">Use a Telegram message or message-range link.</p>
+                </div>
+
+                <div class="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label for="playFolder" class="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-2">Sub-Folder (Optional)</label>
+                    <input type="text" id="playFolder" value="Lectures" autocapitalize="none" autocomplete="off" spellcheck="false" class="field-input w-full rounded-xl border border-white/10 bg-zinc-900/80 px-4 py-3 text-base sm:text-sm text-white focus:border-cyan-400 focus:outline-none font-mono">
+                  </div>
+                  <div>
+                    <label for="playFind" class="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-2">Replace Find Rule</label>
+                    <input type="text" id="playFind" value="_BrandName" autocapitalize="none" autocomplete="off" spellcheck="false" class="field-input w-full rounded-xl border border-white/10 bg-zinc-900/80 px-4 py-3 text-base sm:text-sm text-white focus:border-cyan-400 focus:outline-none font-mono">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Output Preview Box -->
+            <div class="preview-card rounded-2xl border border-cyan-500/30 bg-zinc-950 p-6 space-y-4 glow-cyan">
+              <div class="flex items-center justify-between text-xs font-semibold text-cyan-400 uppercase tracking-wider">
+                <span>CLI Input Preview</span>
+                <span class="text-zinc-400">Live Generated</span>
+              </div>
+
+              <div class="play-output-row rounded-xl border border-white/10 bg-zinc-900/90 p-4 font-mono text-xs text-cyan-200 break-all select-all flex items-center justify-between gap-3" aria-live="polite">
+                <span id="playOutput" class="generated-value">https://t.me/c/1234567890/49-84 Lectures replace="_BrandName"=""</span>
+                <button type="button" onclick="copyGeneratedCommand()" class="copy-button shrink-0" aria-label="Copy generated command">
+                  <i data-lucide="copy" class="w-4 h-4"></i>
+                </button>
+              </div>
+
+              <div class="text-xs text-zinc-400 space-y-2 pt-2 border-t border-white/10">
+                <div class="detail-row flex justify-between">
+                  <span class="text-zinc-400">Save Location:</span>
+                  <span id="playPath" class="path-value font-mono text-white">AshlynnTGDL/Lectures/</span>
+                </div>
+                <div class="detail-row flex justify-between">
+                  <span class="text-zinc-400">Filename Effect:</span>
+                  <span id="playEffect" class="generated-value font-mono text-cyan-300">Strips "_BrandName" from files</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Usage & Link Formats Table -->
+      <section id="usage" class="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
+        <div class="max-w-3xl mb-12" data-reveal>
+          <p class="text-xs uppercase tracking-widest font-bold text-cyan-400 mb-2">Input Reference</p>
+          <h2 class="section-title text-3xl font-extrabold text-white sm:text-4xl tracking-tight">Supported Telegram Link Formats</h2>
+          <p class="mt-4 text-zinc-400 text-base">Copy any message link in Telegram and append options as needed.</p>
+        </div>
+
+        <div class="table-shell glass-card rounded-3xl overflow-hidden" data-reveal>
+          <div class="table-scroll overflow-x-auto">
+            <table class="usage-table w-full text-left text-sm text-zinc-300">
+              <caption class="sr-only">Telegram link formats and their destination paths</caption>
+              <thead class="bg-zinc-900/80 text-xs font-semibold uppercase tracking-wider text-cyan-400 border-b border-white/10">
+                <tr>
+                  <th scope="col" class="px-6 py-4">Link Category</th>
+                  <th scope="col" class="px-6 py-4">Example Input</th>
+                  <th scope="col" class="px-6 py-4">Destination Path</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-white/10 font-mono text-xs">
+                <tr class="hover:bg-white/[0.02]">
+                  <td data-label="Link category" class="px-6 py-4 font-sans font-medium text-white">Public Single Message</td>
+                  <td data-label="Example input" class="px-6 py-4 text-cyan-300">https://t.me/channelname/1423</td>
+                  <td data-label="Destination" class="px-6 py-4 text-zinc-400">AshlynnTGDL/</td>
+                </tr>
+                <tr class="hover:bg-white/[0.02]">
+                  <td data-label="Link category" class="px-6 py-4 font-sans font-medium text-white">Private Channel Range</td>
+                  <td data-label="Example input" class="px-6 py-4 text-cyan-300">https://t.me/c/1234567890/100-150</td>
+                  <td data-label="Destination" class="px-6 py-4 text-zinc-400">AshlynnTGDL/</td>
+                </tr>
+                <tr class="hover:bg-white/[0.02]">
+                  <td data-label="Link category" class="px-6 py-4 font-sans font-medium text-white">Range + Folder</td>
+                  <td data-label="Example input" class="px-6 py-4 text-cyan-300">https://t.me/channel/50-80 Biology</td>
+                  <td data-label="Destination" class="px-6 py-4 text-zinc-400">AshlynnTGDL/Biology/</td>
+                </tr>
+                <tr class="hover:bg-white/[0.02]">
+                  <td data-label="Link category" class="px-6 py-4 font-sans font-medium text-white">Range + Folder + Rename</td>
+                  <td data-label="Example input" class="px-6 py-4 text-cyan-300">https://t.me/c/123/1-20 Docs replace="_v1"="_final"</td>
+                  <td data-label="Destination" class="px-6 py-4 text-zinc-400">AshlynnTGDL/Docs/</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Account Safety & Rate Limiting Section -->
+      <section id="safety" class="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
+        <div class="safety-grid grid gap-12 lg:grid-cols-[1fr_1.1fr] items-center" data-reveal-stagger>
+          <div>
+            <p class="text-xs uppercase tracking-widest font-bold text-cyan-400 mb-2">Protection Architecture</p>
+            <h2 class="section-title text-3xl font-extrabold text-white sm:text-4xl tracking-tight">Built-in account safety & throttle pacing</h2>
+            <p class="mt-4 text-zinc-400 text-base leading-relaxed">
+              To mitigate Telegram API throttling and protect account health during batch operations, AshlynnTGDL implements automated tiered sleep intervals.
+            </p>
+
+            <div class="mt-6 space-y-3 font-sans text-xs">
+              <div class="safety-timing-row glass-card rounded-xl p-3.5 flex items-center justify-between">
+                <span class="text-zinc-300 font-semibold">Inter-file Delay</span>
+                <span class="font-mono text-cyan-400 font-bold">1.5s pause</span>
+              </div>
+              <div class="safety-timing-row glass-card rounded-xl p-3.5 flex items-center justify-between">
+                <span class="text-zinc-300 font-semibold">Every 10 Files Cooldown</span>
+                <span class="font-mono text-cyan-400 font-bold">+6s pause</span>
+              </div>
+              <div class="safety-timing-row glass-card rounded-xl p-3.5 flex items-center justify-between">
+                <span class="text-zinc-300 font-semibold">Every 50 Files Safety Break</span>
+                <span class="font-mono text-cyan-400 font-bold">+20s pause</span>
+              </div>
+              <div class="safety-timing-row glass-card rounded-xl p-3.5 flex items-center justify-between">
+                <span class="text-zinc-300 font-semibold">FloodWait Response</span>
+                <span class="font-mono text-cyan-400 font-bold">Exact Telegram sleep</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="rounded-3xl border border-white/10 bg-zinc-950 p-6 lg:p-8 space-y-6">
+            <h3 class="text-xl font-bold text-white flex items-center gap-2">
+              <i data-lucide="shield" class="w-5 h-5 text-cyan-400"></i>
+              <span>Responsible Usage Guidelines</span>
+            </h3>
+
+            <ul class="space-y-4 text-sm text-zinc-300">
+              <li class="flex gap-3">
+                <i data-lucide="check-circle" class="w-5 h-5 text-cyan-400 shrink-0 mt-0.5"></i>
+                <span><strong>Use personal credentials:</strong> Register your own API ID and API HASH at my.telegram.org.</span>
+              </li>
+              <li class="flex gap-3">
+                <i data-lucide="check-circle" class="w-5 h-5 text-cyan-400 shrink-0 mt-0.5"></i>
+                <span><strong>Keep ashlynn_config.txt private:</strong> It contains your active Telegram session string. Never commit it to git.</span>
+              </li>
+              <li class="flex gap-3">
+                <i data-lucide="check-circle" class="w-5 h-5 text-cyan-400 shrink-0 mt-0.5"></i>
+                <span><strong>Avoid excessive daily volume:</strong> Fetching tens of thousands of files continuously may cause Telegram rate limits.</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- FAQ Section -->
+      <section id="faq" class="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
+        <div class="text-center max-w-3xl mx-auto mb-14" data-reveal>
+          <p class="text-xs uppercase tracking-widest font-bold text-cyan-400 mb-2">Help Center</p>
+          <h2 class="section-title text-3xl font-extrabold text-white sm:text-4xl tracking-tight">Frequently Asked Questions</h2>
+        </div>
+
+        <div class="max-w-4xl mx-auto space-y-4" data-reveal-stagger>
+          <!-- Accordion Item 1 -->
+          <div class="faq-card glass-card rounded-2xl">
+            <button type="button" id="faq-btn-1" class="faq-button w-full px-6 py-5 text-left font-bold text-white flex items-center justify-between gap-4" aria-expanded="false" aria-controls="faq-ans-1">
+              <span>What chats or channels can I fetch media from?</span>
+              <i id="faq-icon-1" data-lucide="chevron-down" class="faq-chevron w-5 h-5 text-cyan-400 transition-transform"></i>
+            </button>
+            <div id="faq-ans-1" class="faq-answer text-sm text-zinc-400 leading-relaxed" role="region" aria-labelledby="faq-btn-1">
+              You can fetch from any public channel or group, as well as private channels and groups where your logged-in Telegram account is currently a member.
+            </div>
+          </div>
+
+          <!-- Accordion Item 2 -->
+          <div class="faq-card glass-card rounded-2xl">
+            <button type="button" id="faq-btn-2" class="faq-button w-full px-6 py-5 text-left font-bold text-white flex items-center justify-between gap-4" aria-expanded="false" aria-controls="faq-ans-2">
+              <span>How does Kurigram improve download speeds?</span>
+              <i id="faq-icon-2" data-lucide="chevron-down" class="faq-chevron w-5 h-5 text-cyan-400 transition-transform"></i>
+            </button>
+            <div id="faq-ans-2" class="faq-answer text-sm text-zinc-400 leading-relaxed" role="region" aria-labelledby="faq-btn-2">
+              Kurigram supports multi-chunk concurrent transmission (<code class="text-cyan-300 font-mono">max_concurrent_transmissions=4</code>) and fast native crypto through PyroTgCrypto, allowing up to 4 parallel streams per file download.
+            </div>
+          </div>
+
+          <!-- Accordion Item 3 -->
+          <div class="faq-card glass-card rounded-2xl">
+            <button type="button" id="faq-btn-3" class="faq-button w-full px-6 py-5 text-left font-bold text-white flex items-center justify-between gap-4" aria-expanded="false" aria-controls="faq-ans-3">
+              <span>How do I reset my credentials or switch Telegram accounts?</span>
+              <i id="faq-icon-3" data-lucide="chevron-down" class="faq-chevron w-5 h-5 text-cyan-400 transition-transform"></i>
+            </button>
+            <div id="faq-ans-3" class="faq-answer text-sm text-zinc-400 leading-relaxed" role="region" aria-labelledby="faq-btn-3">
+              Simply delete the auto-generated <code class="text-cyan-300 font-mono">ashlynn_config.txt</code> file in the application directory and re-run the tool. It will prompt you for fresh credentials.
+            </div>
+          </div>
+
+          <!-- Accordion Item 4 -->
+          <div class="faq-card glass-card rounded-2xl">
+            <button type="button" id="faq-btn-4" class="faq-button w-full px-6 py-5 text-left font-bold text-white flex items-center justify-between gap-4" aria-expanded="false" aria-controls="faq-ans-4">
+              <span>Is my session string sent to external servers?</span>
+              <i id="faq-icon-4" data-lucide="chevron-down" class="faq-chevron w-5 h-5 text-cyan-400 transition-transform"></i>
+            </button>
+            <div id="faq-ans-4" class="faq-answer text-sm text-zinc-400 leading-relaxed" role="region" aria-labelledby="faq-btn-4">
+              No. Your session string and credentials remain strictly local to your machine. The app communicates directly with Telegram's official MTProto servers.
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+      <!-- Footer -->
+      <footer class="border-t border-white/10 bg-zinc-950 py-12">
+        <div class="footer-inner mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-lg font-bold text-white">AshlynnTGDL</span>
+              <span class="text-xs text-zinc-500">• MIT License</span>
+            </div>
+            <p class="text-xs text-zinc-400 mt-1">Made with ❤️ by <a href="https://t.me/Ashlynn_Repository" target="_blank" rel="noopener noreferrer" class="text-cyan-400 hover:underline">Aarabh</a>. For personal archival & educational use.</p>
+          </div>
+
+          <div class="footer-links flex items-center gap-6 text-xs font-semibold text-zinc-400">
+            <a href="https://github.com/Itz-Ashlynn/AshlynnTGDL" target="_blank" rel="noopener noreferrer" class="hover:text-cyan-300 transition">GitHub Repo</a>
+            <a href="https://github.com/Itz-Ashlynn/AshlynnTGDL/releases/latest" target="_blank" rel="noopener noreferrer" class="hover:text-cyan-300 transition">Releases</a>
+            <a href="https://t.me/Ashlynn_Repository" target="_blank" rel="noopener noreferrer" class="hover:text-cyan-300 transition">Telegram Channel</a>
+          </div>
+        </div>
+      </footer>
+  </div>
+
+  <button type="button" id="backToTop" class="back-to-top" aria-label="Back to top">
+    <i data-lucide="arrow-up" class="w-5 h-5"></i>
+  </button>
+
+  <!-- JavaScript Interaction Handlers -->
+  <script>
+    (() => {
+      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+      const canHover = window.matchMedia('(hover: hover) and (pointer: fine)');
+
+      // Icons are decorative; every interaction keeps working if the CDN is unavailable.
+      try {
+        window.lucide?.createIcons();
+        document.querySelectorAll('svg.lucide').forEach(icon => icon.setAttribute('aria-hidden', 'true'));
+      } catch (error) {
+        console.warn('Icons could not be initialized.', error);
+      }
+
+      document.querySelectorAll('a[target="_blank"]').forEach(link => {
+        link.rel = 'noopener noreferrer';
+      });
+
+      // Mobile navigation
+      const siteHeader = document.getElementById('siteHeader');
+      const menuBtn = document.getElementById('menuBtn');
+      const mobileMenu = document.getElementById('mobileMenu');
+      const mobileMenuLinks = [...(mobileMenu?.querySelectorAll('a') || [])];
+
+      function setMenuOpen(open, returnFocus = false) {
+        if (!menuBtn || !mobileMenu) return;
+        mobileMenu.classList.toggle('is-open', open);
+        mobileMenu.setAttribute('aria-hidden', String(!open));
+        menuBtn.setAttribute('aria-expanded', String(open));
+        menuBtn.setAttribute('aria-label', open ? 'Close navigation menu' : 'Open navigation menu');
+        document.body.classList.toggle('menu-open', open);
+        if ('inert' in mobileMenu) mobileMenu.inert = !open;
+
+        if (open) {
+          window.requestAnimationFrame(() => mobileMenuLinks[0]?.focus());
+        } else if (returnFocus) {
+          menuBtn.focus();
+        }
+      }
+
+      if (mobileMenu && 'inert' in mobileMenu) mobileMenu.inert = true;
+      menuBtn?.addEventListener('click', () => {
+        setMenuOpen(menuBtn.getAttribute('aria-expanded') !== 'true');
+      });
+      mobileMenuLinks.forEach(link => link.addEventListener('click', () => setMenuOpen(false)));
+      document.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && menuBtn?.getAttribute('aria-expanded') === 'true') {
+          setMenuOpen(false, true);
+        }
+      });
+      document.addEventListener('pointerdown', event => {
+        if (menuBtn?.getAttribute('aria-expanded') === 'true' && !siteHeader?.contains(event.target)) {
+          setMenuOpen(false);
+        }
+      });
+      window.addEventListener('resize', () => {
+        if (window.innerWidth > 1120) setMenuOpen(false);
+      }, { passive: true });
+
+      // Accessible installation tabs with keyboard navigation
+      const tabs = [...document.querySelectorAll('[role="tab"]')];
+      const tabPanels = [...document.querySelectorAll('[role="tabpanel"]')];
+
+      function switchTab(tabId, moveFocus = false) {
+        const activeTab = tabs.find(tab => tab.dataset.tabTarget === tabId);
+        if (!activeTab) return;
+
+        tabs.forEach(tab => {
+          const active = tab === activeTab;
+          tab.setAttribute('aria-selected', String(active));
+          tab.tabIndex = active ? 0 : -1;
+          tab.classList.toggle('active', active);
+          tab.classList.toggle('bg-cyan-400', active);
+          tab.classList.toggle('text-zinc-950', active);
+          tab.classList.toggle('shadow-md', active);
+          tab.classList.toggle('bg-white/[0.04]', !active);
+          tab.classList.toggle('text-zinc-400', !active);
+        });
+
+        tabPanels.forEach(panel => {
+          const active = panel.id === tabId;
+          panel.hidden = !active;
+          panel.classList.toggle('hidden', !active);
+        });
+
+        if (moveFocus) activeTab.focus();
+      }
+
+      window.switchTab = switchTab;
+      tabs.forEach((tab, index) => {
+        tab.addEventListener('click', () => switchTab(tab.dataset.tabTarget));
+        tab.addEventListener('keydown', event => {
+          let nextIndex = null;
+          if (event.key === 'ArrowRight' || event.key === 'ArrowDown') nextIndex = (index + 1) % tabs.length;
+          if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') nextIndex = (index - 1 + tabs.length) % tabs.length;
+          if (event.key === 'Home') nextIndex = 0;
+          if (event.key === 'End') nextIndex = tabs.length - 1;
+          if (nextIndex === null) return;
+          event.preventDefault();
+          switchTab(tabs[nextIndex].dataset.tabTarget, true);
+          tabs[nextIndex].scrollIntoView({ behavior: prefersReducedMotion.matches ? 'auto' : 'smooth', block: 'nearest', inline: 'center' });
+        });
+      });
+
+      // FAQ accordion
+      const faqButtons = [...document.querySelectorAll('.faq-button')];
+
+      function setFaqOpen(button, open) {
+        const answer = document.getElementById(button.getAttribute('aria-controls'));
+        const card = button.closest('.faq-card');
+        button.setAttribute('aria-expanded', String(open));
+        answer?.setAttribute('aria-hidden', String(!open));
+        card?.classList.toggle('is-open', open);
+        if (answer && 'inert' in answer) answer.inert = !open;
+      }
+
+      faqButtons.forEach(button => {
+        setFaqOpen(button, false);
+        button.addEventListener('click', () => {
+          setFaqOpen(button, button.getAttribute('aria-expanded') !== 'true');
+        });
+      });
+
+      window.toggleFaq = id => {
+        const button = document.getElementById(`faq-btn-${id}`);
+        if (button) setFaqOpen(button, button.getAttribute('aria-expanded') !== 'true');
+      };
+
+      // Live command playground
+      const playLink = document.getElementById('playLink');
+      const playFolder = document.getElementById('playFolder');
+      const playFind = document.getElementById('playFind');
+      const playOutput = document.getElementById('playOutput');
+      const playPath = document.getElementById('playPath');
+      const playEffect = document.getElementById('playEffect');
+      const playLinkHint = document.getElementById('playLinkHint');
+
+      function isTelegramLink(value) {
+        if (!value) return true;
+        try {
+          const url = new URL(value);
+          return url.protocol === 'https:' && (url.hostname === 't.me' || url.hostname.endsWith('.t.me'));
+        } catch {
+          return false;
+        }
+      }
+
+      function updatePlayground() {
+        if (!playLink || !playFolder || !playFind || !playOutput || !playPath || !playEffect) return;
+        const rawLink = playLink.value.trim();
+        const link = rawLink || 'https://t.me/...';
+        const folder = playFolder.value.trim();
+        const find = playFind.value.trim();
+        const validLink = isTelegramLink(rawLink);
+
+        playLink.setAttribute('aria-invalid', String(!validLink));
+        if (playLinkHint) {
+          playLinkHint.textContent = validLink
+            ? 'Use a Telegram message or message-range link.'
+            : 'Enter a secure t.me Telegram link.';
+          playLinkHint.classList.toggle('text-amber-300', !validLink);
+          playLinkHint.classList.toggle('text-zinc-400', validLink);
+        }
+
+        let command = link;
+        if (folder) command += ` ${folder}`;
+        if (find) command += ` replace="${find}"=""`;
+
+        playOutput.textContent = command;
+        playPath.textContent = folder ? `AshlynnTGDL/${folder}/` : 'AshlynnTGDL/';
+        playEffect.textContent = find ? `Strips "${find}" from filenames` : 'Default filenames preserved';
+      }
+
+      [playLink, playFolder, playFind].forEach(field => field?.addEventListener('input', updatePlayground));
+      updatePlayground();
+
+      // Reliable clipboard feedback with a fallback for local-file previews
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toastMsg');
+      let toastTimer;
+
+      function showToast(message, type = 'success') {
+        if (!toast || !toastMsg) return;
+        window.clearTimeout(toastTimer);
+        toast.dataset.type = type;
+        toastMsg.textContent = message;
+        toast.classList.remove('translate-y-20', 'opacity-0');
+        toastTimer = window.setTimeout(() => {
+          toast.classList.add('translate-y-20', 'opacity-0');
+        }, 2600);
+      }
+
+      async function writeToClipboard(text) {
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(text);
+          return;
+        }
+
+        const temporaryInput = document.createElement('textarea');
+        temporaryInput.value = text;
+        temporaryInput.setAttribute('readonly', '');
+        temporaryInput.style.position = 'fixed';
+        temporaryInput.style.opacity = '0';
+        document.body.appendChild(temporaryInput);
+        temporaryInput.select();
+        const copied = document.execCommand('copy');
+        temporaryInput.remove();
+        if (!copied) throw new Error('Copy command was rejected');
+      }
+
+      window.copyCode = async elementId => {
+        const element = document.getElementById(elementId);
+        if (!element) return;
+        try {
+          await writeToClipboard(element.textContent.trim());
+          showToast('Code copied to clipboard!');
+        } catch {
+          showToast('Copy failed. Select the code and copy it manually.', 'error');
+        }
+      };
+
+      window.copyGeneratedCommand = async () => {
+        if (!playOutput) return;
+        try {
+          await writeToClipboard(playOutput.textContent.trim());
+          showToast('Generated command copied!');
+        } catch {
+          showToast('Copy failed. Select the command and copy it manually.', 'error');
+        }
+      };
+
+      // Scroll progress, active-section state, and back-to-top affordance
+      const scrollProgress = document.getElementById('scrollProgress');
+      const backToTop = document.getElementById('backToTop');
+      const desktopNavLinks = [...document.querySelectorAll('.nav-link')];
+      const trackedSections = [...document.querySelectorAll('main section[id]')];
+      let scrollFramePending = false;
+
+      function updateScrollUi() {
+        const scrollRange = document.documentElement.scrollHeight - window.innerHeight;
+        const progress = scrollRange > 0 ? Math.min(window.scrollY / scrollRange, 1) : 0;
+        if (scrollProgress) scrollProgress.style.transform = `scaleX(${progress})`;
+        backToTop?.classList.toggle('is-visible', window.scrollY > 700);
+
+        const activationLine = (siteHeader?.offsetHeight || 72) + 120;
+        let activeId = '';
+        trackedSections.forEach(section => {
+          if (section.getBoundingClientRect().top <= activationLine) activeId = section.id;
+        });
+        desktopNavLinks.forEach(link => {
+          const active = link.getAttribute('href') === `#${activeId}`;
+          link.classList.toggle('is-active', active);
+          if (active) link.setAttribute('aria-current', 'location');
+          else link.removeAttribute('aria-current');
+        });
+        scrollFramePending = false;
+      }
+
+      function requestScrollUiUpdate() {
+        if (scrollFramePending) return;
+        scrollFramePending = true;
+        window.requestAnimationFrame(updateScrollUi);
+      }
+
+      window.addEventListener('scroll', requestScrollUiUpdate, { passive: true });
+      window.addEventListener('resize', requestScrollUiUpdate, { passive: true });
+      backToTop?.addEventListener('click', () => {
+        window.scrollTo({ top: 0, behavior: prefersReducedMotion.matches ? 'auto' : 'smooth' });
+      });
+      updateScrollUi();
+
+      // Lightweight entrance motion with staggered groups
+      const revealTargets = [...document.querySelectorAll('[data-reveal], [data-reveal-stagger]')];
+      document.querySelectorAll('[data-reveal-stagger]').forEach(group => {
+        [...group.children].forEach((child, index) => child.style.setProperty('--stagger-index', index));
+      });
+
+      if (prefersReducedMotion.matches || !('IntersectionObserver' in window)) {
+        revealTargets.forEach(target => target.classList.add('is-visible'));
+      } else {
+        const revealObserver = new IntersectionObserver(entries => {
+          entries.forEach(entry => {
+            if (!entry.isIntersecting) return;
+            entry.target.classList.add('is-visible');
+            revealObserver.unobserve(entry.target);
+          });
+        }, { threshold: 0.08, rootMargin: '0px 0px -8% 0px' });
+        revealTargets.forEach(target => revealObserver.observe(target));
+        window.setTimeout(() => revealTargets.forEach(target => target.classList.add('is-visible')), 3000);
+      }
+
+      // Pointer spotlight stays desktop-only and uses transform-free CSS variables.
+      if (canHover.matches && !prefersReducedMotion.matches) {
+        document.querySelectorAll('.feature-card').forEach(card => {
+          card.addEventListener('pointermove', event => {
+            const bounds = card.getBoundingClientRect();
+            card.style.setProperty('--spot-x', `${event.clientX - bounds.left}px`);
+            card.style.setProperty('--spot-y', `${event.clientY - bounds.top}px`);
+          });
+        });
+      }
+    })();
+  </script>
+</body>
+</html>

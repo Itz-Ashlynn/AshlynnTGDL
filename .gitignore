@@ -1,0 +1,42 @@
+# ── Credentials (NEVER commit these) ─────────────────────────────────────────
+ashlynn_config.txt
+*.txt
+
+# ── Download output folder ────────────────────────────────────────────────────
+AshlynnTGDL/
+
+# ── Built executables ─────────────────────────────────────────────────────────
+AshlynnTGDL.exe
+AshlynnTGDL.spec
+AshlynnTGDL-linux
+AshlynnTGDL-macos
+
+# ── PyInstaller temp folders ──────────────────────────────────────────────────
+build/
+dist/
+
+# ── Python cache ──────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+
+# ── Virtual environments ──────────────────────────────────────────────────────
+.venv/
+venv/
+env/
+ENV/
+
+# ── OS junk ───────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── IDE / editor ─────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ── Logs ─────────────────────────────────────────────────────────────────────
+*.log
