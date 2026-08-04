@@ -1,15 +1,17 @@
 name: Build & Release AshlynnTGDL
 
 # ─── Triggers ──────────────────────────────────────────────────────────────────
-# • Every push to main  → build all platforms + publish to rolling "latest" release
-# • Every version tag   → build all platforms + publish to a versioned release
-# • PRs                 → build only (no release)
+# • Push to main       → build all platforms + publish & mark as Latest release
+# • Version tags (v*) → build all platforms + publish versioned Latest release
+# • Manual trigger    → allow triggering from GitHub Actions tab
+# • PRs                → build check only (no release)
 on:
   push:
     branches: [main]
     tags:     ['v*.*.*']
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 # Allow the workflow to create/update releases
 permissions:
@@ -17,7 +19,7 @@ permissions:
 
 jobs:
   # ─────────────────────────────────────────────────────────────────────────────
-  # Job 1: Build on each platform
+  # Job 1: Build binaries on Windows, Linux, macOS
   # ─────────────────────────────────────────────────────────────────────────────
   build:
     name: Build on ${{ matrix.os }}
@@ -56,7 +58,7 @@ jobs:
         if: runner.os == 'Windows'
         run: cmd /c build.bat
 
-      # Rename to platform-specific name so all 3 can co-exist in one release
+      # Rename output to platform-specific filename
       - name: 🏷️ Rename binary to platform name
         shell: bash
         run: |
@@ -74,10 +76,7 @@ jobs:
           retention-days: 7
 
   # ─────────────────────────────────────────────────────────────────────────────
-  # Job 2: Publish to GitHub Releases
-  #   - Skipped on pull requests
-  #   - On push to main  → updates/creates the rolling "latest" release
-  #   - On version tag   → creates a versioned release (e.g. v2.1.0)
+  # Job 2: Publish & Attach binaries to GitHub Releases
   # ─────────────────────────────────────────────────────────────────────────────
   release:
     name: Publish to GitHub Releases
@@ -90,51 +89,54 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: dist/
-          merge-multiple: true  # flatten into dist/ (no sub-folders per artifact)
+          merge-multiple: true
 
-      - name: 📋 List downloaded files
+      - name: 📋 List downloaded binary files
         run: ls -lh dist/
 
-      # ── Rolling "latest" release (every push to main) ──────────────────────
-      - name: 🔄 Publish rolling "latest" release
-        if: github.ref == 'refs/heads/main'
+      # ── Rolling release (push to main or workflow_dispatch) ────────────────
+      - name: 🔄 Publish latest release
+        if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
         uses: softprops/action-gh-release@v2
         with:
+          token: ${{ secrets.GITHUB_TOKEN }}
           tag_name: latest
           name: "AshlynnTGDL — Latest Build"
           body: |
-            🤖 **Auto-built from the latest commit on `main`**
+            🚀 **Latest Automated Release Build**
 
             | File | Platform |
             |------|----------|
-            | `AshlynnTGDL-Windows.exe` | Windows |
-            | `AshlynnTGDL-Linux` | Linux |
-            | `AshlynnTGDL-macOS` | macOS |
+            | `AshlynnTGDL-Windows.exe` | 🪟 Windows |
+            | `AshlynnTGDL-Linux` | 🐧 Linux |
+            | `AshlynnTGDL-macOS` | 🍎 macOS |
 
-            > Built from commit: `${{ github.sha }}`
-          prerelease: true
-          make_latest: false
+            > Built automatically from commit `${{ github.sha }}`
+          prerelease: false
+          make_latest: true
           files: |
             dist/AshlynnTGDL-Windows.exe
             dist/AshlynnTGDL-Linux
             dist/AshlynnTGDL-macOS
 
-      # ── Versioned release (on tags like v2.0.0) ────────────────────────────
+      # ── Versioned release (on tags like v2.0.1) ────────────────────────────
       - name: 🏷️ Publish versioned release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
+          token: ${{ secrets.GITHUB_TOKEN }}
           name: "AshlynnTGDL ${{ github.ref_name }}"
           body: |
             ## AshlynnTGDL ${{ github.ref_name }}
 
-            Download the standalone executable for your platform below.
+            Download the official executable for your platform below.
 
             | File | Platform |
             |------|----------|
-            | `AshlynnTGDL-Windows.exe` | Windows |
-            | `AshlynnTGDL-Linux` | Linux |
-            | `AshlynnTGDL-macOS` | macOS |
+            | `AshlynnTGDL-Windows.exe` | 🪟 Windows |
+            | `AshlynnTGDL-Linux` | 🐧 Linux |
+            | `AshlynnTGDL-macOS` | 🍎 macOS |
+          prerelease: false
           make_latest: true
           files: |
             dist/AshlynnTGDL-Windows.exe
