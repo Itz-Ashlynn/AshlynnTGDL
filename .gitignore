@@ -1,6 +1,5 @@
 # ── Credentials (NEVER commit these) ─────────────────────────────────────────
 ashlynn_config.txt
-*.txt
 
 # ── Download output folder ────────────────────────────────────────────────────
 AshlynnTGDL/
